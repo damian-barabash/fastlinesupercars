@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { T, useContent } from '../lib/content.jsx'
+import { T, Img } from '../lib/content.jsx'
 import { useProducts } from '../lib/products.js'
 import { addToCart } from '../lib/cart.js'
 import { Reveal, Stagger, Item } from '../components/Reveal.jsx'
@@ -20,8 +20,7 @@ const BEN_ICONS = [
 
 export default function Home() {
   const products = useProducts()
-  const { c } = useContent()
-  const GALLERY = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => c[`img.gal.${i}`])
+
   const cars = products.filter((p) => p.id !== 'voucher')
   const voucher = products.find((p) => p.id === 'voucher')
 
@@ -29,7 +28,7 @@ export default function Home() {
     <main>
       {/* HERO — original Maserati banner with FAST -10% promo */}
       <section className="hero">
-        <img src={c['img.hero']} alt="Zarezerwuj swoją przejażdżkę marzeń — Maserati MC20 na torze. 10% zniżki z kodem FAST na zakupy powyżej 500 zł" className="hero-img" fetchPriority="high" />
+        <Img k="img.hero" alt="Zarezerwuj swoją przejażdżkę marzeń — Maserati MC20 na torze. 10% zniżki z kodem FAST na zakupy powyżej 500 zł" className="hero-img" fetchPriority="high" />
         <div className="hero-overlay wrap">
           <div className="hero-ctas">
             <Link to="/oferta" className="btn btn-red hero-btn">Wybierz auto&nbsp;&nbsp;»</Link>
@@ -71,7 +70,7 @@ export default function Home() {
       {/* VOUCHER — dark photo band (marshal with checkered flag) */}
       {voucher && (
         <section className="vban">
-          <img src={c['img.vban_bg']} alt="" className="vban-bg" loading="lazy" />
+          <Img k="img.vban_bg" alt="" className="vban-bg" loading="lazy" />
           <div className="wrap vban-in">
             <Reveal className="vban-copy">
               <span className="r-label vban-label"><T k="vban.label" /></span>
@@ -86,7 +85,7 @@ export default function Home() {
               </div>
             </Reveal>
             <Reveal delay={0.15} className="vban-img">
-              <img src={c['img.vban_card']} alt="Voucher Fastline Supercars" loading="lazy" />
+              <Img k="img.vban_card" alt="Voucher Fastline Supercars" loading="lazy" />
             </Reveal>
           </div>
         </section>
@@ -97,7 +96,7 @@ export default function Home() {
         <div className="wrap">
           <Reveal className="tac"><h2 className="h-lg"><T k="steps.title" /></h2></Reveal>
           <Reveal delay={0.1}>
-            <img src={c['img.steps_map']} alt="1. Wybierz auto, pojedynek lub szkolenie. 2. Wybierz termin, opłać zlecenie. 3. Spełniasz marzenia!" className="steps-map" loading="lazy" />
+            <Img k="img.steps_map" alt="1. Wybierz auto, pojedynek lub szkolenie. 2. Wybierz termin, opłać zlecenie. 3. Spełniasz marzenia!" className="steps-map" loading="lazy" />
           </Reveal>
           <Stagger className="steps">
             {[1, 2, 3].map((i) => (
@@ -113,7 +112,7 @@ export default function Home() {
 
       {/* ABOUT — panorama band */}
       <section className="about-band">
-        <img src={c['img.about_bg']} alt="" className="about-band-bg" loading="lazy" />
+        <Img k="img.about_bg" alt="" className="about-band-bg" loading="lazy" />
         <div className="wrap about-band-in">
           <Reveal className="about-card">
             <span className="r-label"><T k="about.label" /></span>
@@ -151,9 +150,9 @@ export default function Home() {
             <h2 className="h-lg" style={{ marginTop: 14, marginBottom: 40 }}>Nasze auta w akcji</h2>
           </Reveal>
           <Stagger className="gal-grid">
-            {GALLERY.map((src, i) => (
-              <Item key={src} className={`gal-item ${i === 0 || i === 5 ? 'gal-wide' : ''}`}>
-                <img src={src} alt="Fastline Supercars na torze" loading="lazy" />
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n, i) => (
+              <Item key={n} className={`gal-item ${i === 0 || i === 5 ? 'gal-wide' : ''}`}>
+                <Img k={`img.gal.${n}`} alt="Fastline Supercars na torze" loading="lazy" />
               </Item>
             ))}
           </Stagger>
@@ -173,7 +172,7 @@ export default function Home() {
 
       {/* REVIEWS — dark photo band */}
       <section className="rev-sec">
-        <img src={c['img.rev_bg']} alt="" className="rev-bg" loading="lazy" />
+        <Img k="img.rev_bg" alt="" className="rev-bg" loading="lazy" />
         <div className="wrap rev-in">
           <Reveal className="tac">
             <span className="r-label rev-label" style={{ justifyContent: 'center' }}>Opinie</span>

@@ -169,10 +169,11 @@ Deno.serve(async (req) => {
       case 'voucherPdfUrl': {
         const r = await fetch(`${SB_URL}/storage/v1/object/sign/vouchery/${body.path}`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json' },
+          headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, 'Content-Type': 'application/json' },
           body: JSON.stringify({ expiresIn: 3600 }),
         })
-        const d = await r.json()
+        const d = await r.json().catch(() => ({}))
+        if (!d.signedURL) console.error('sign fail', r.status, JSON.stringify(d))
         return J({ url: d.signedURL ? `${SB_URL}/storage/v1${d.signedURL}` : null })
       }
 
@@ -182,7 +183,7 @@ Deno.serve(async (req) => {
         const path = `${Date.now()}-${(body.name || 'file').replace(/[^a-zA-Z0-9._-]/g, '-')}`
         const r = await fetch(`${SB_URL}/storage/v1/object/media/${path}`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': body.type || 'application/octet-stream', 'x-upsert': 'true' },
+          headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, 'Content-Type': body.type || 'application/octet-stream', 'x-upsert': 'true' },
           body: bytes,
         })
         if (!r.ok) return J({ error: await r.text() }, 500)
@@ -194,8 +195,18 @@ Deno.serve(async (req) => {
           db('orders?select=status,total,created_at'),
           db('vouchers?select=status'),
         ])
+        // monthly aggregation
+        const byMonth: Record<string, { month: string; orders: number; paid: number; revenue: number }> = {}
+        for (const o of orders) {
+          const m = String(o.created_at || '').slice(0, 7)
+          if (!m) continue
+          byMonth[m] ??= { month: m, orders: 0, paid: 0, revenue: 0 }
+          byMonth[m].orders++
+          if (o.status === 'paid') { byMonth[m].paid++; byMonth[m].revenue += o.total }
+        }
         const paid = orders.filter((o: { status: string }) => o.status === 'paid')
         return J({
+          months: Object.values(byMonth).sort((a, b) => b.month.localeCompare(a.month)),
           orders_total: orders.length,
           orders_paid: paid.length,
           revenue: paid.reduce((s: number, o: { total: number }) => s + o.total, 0),

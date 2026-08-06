@@ -3,11 +3,11 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { DEFAULTS } from '../data/defaults.js'
 import { rest } from './api.js'
 
-const Ctx = createContext({ c: DEFAULTS, editing: false, setKey: () => {} })
+const Ctx = createContext({ c: DEFAULTS, editing: false, setKey: () => {}, onUpload: null })
 
 let cache = null
 
-export function ContentProvider({ children, editing = false, onDirty }) {
+export function ContentProvider({ children, editing = false, onDirty, onUpload = null }) {
   const [c, setC] = useState(() => cache || DEFAULTS)
 
   useEffect(() => {
@@ -31,10 +31,44 @@ export function ContentProvider({ children, editing = false, onDirty }) {
     onDirty?.(key, value)
   }, [onDirty])
 
-  return <Ctx.Provider value={{ c, editing, setKey }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ c, editing, setKey, onUpload }}>{children}</Ctx.Provider>
 }
 
 export function useContent() { return useContext(Ctx) }
+
+// Editable image: same DOM as <img>, so page CSS keeps working.
+// In edit mode: click the photo -> file picker -> upload -> preview + dirty key.
+export function Img({ k, alt = '', className, style, ...rest }) {
+  const { c, editing, setKey, onUpload } = useContext(Ctx)
+  const src = c[k] || ''
+  if (!editing || !onUpload) return <img src={src} alt={alt} className={className} style={style} {...rest} />
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      style={{ ...style, outline: '2px dashed rgba(225,6,0,.7)', outlineOffset: -2, cursor: 'pointer' }}
+      title="Kliknij, aby zmienić zdjęcie"
+      data-edit-img={k}
+      onClick={(e) => {
+        e.preventDefault(); e.stopPropagation()
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = 'image/*'
+        input.onchange = async () => {
+          const f = input.files?.[0]
+          if (!f) return
+          try {
+            const url = await onUpload(f)
+            setKey(k, url)
+          } catch (err) { alert('Błąd wgrywania: ' + err.message) }
+        }
+        input.click()
+      }}
+      {...rest}
+    />
+  )
+}
 
 // Editable text node. In edit mode renders contenteditable.
 export function T({ k, as: Tag = 'span', className, style }) {
@@ -44,9 +78,10 @@ export function T({ k, as: Tag = 'span', className, style }) {
   return (
     <Tag
       className={className}
-      style={{ ...style, outline: '1px dashed rgba(200,16,46,.55), ', outlineOffset: 2, cursor: 'text', minWidth: 10 }}
+      style={{ ...style, outline: '1.5px dashed rgba(225,6,0,.6)', outlineOffset: 3, cursor: 'text', minWidth: 10 }}
       contentEditable
       suppressContentEditableWarning
+      spellCheck={false}
       data-edit={k}
       onBlur={(e) => setKey(k, e.currentTarget.textContent)}
     >{text}</Tag>

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { adminApi, zl } from '../lib/api.js'
 import { DEFAULTS, IMG_SLOTS } from '../data/defaults.js'
+import VisualEditor from './VisualEditor.jsx'
 import './admin.css'
 
 const TABS = [
   ['stats', 'Statystyki'],
-  ['content', 'Treści'],
+  ['editor', 'Edycja strony'],
   ['images', 'Zdjęcia'],
   ['products', 'Produkty'],
   ['orders', 'Zamówienia'],
@@ -46,7 +47,7 @@ export default function Admin() {
       </header>
       <main className="adm-main">
         {tab === 'stats' && <Stats />}
-        {tab === 'content' && <Content />}
+        {tab === 'editor' && <VisualEditor />}
         {tab === 'images' && <Images />}
         {tab === 'products' && <Products />}
         {tab === 'orders' && <Orders />}
@@ -126,12 +127,12 @@ function Stats() {
     })).catch(() => {})
   }, [])
   if (!s) return <p className="adm-muted">Ładowanie…</p>
+  const MONTH_NAMES = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
+  const monthLabel = (m) => { const [y, mm] = m.split('-'); return `${MONTH_NAMES[+mm - 1]} ${y}` }
   const items = [
-    { label: 'Zamówienia', value: s.orders_total },
-    { label: 'Opłacone', value: s.orders_paid },
-    { label: 'Przychód', value: zl(s.revenue) },
     { label: 'Vouchery aktywne', value: s.vouchers_active },
     { label: 'Vouchery użyte', value: s.vouchers_used },
+    { label: 'Przychód łącznie', value: zl(s.revenue) },
   ]
   async function savePromo() {
     setSaving(true)
@@ -150,6 +151,22 @@ function Stats() {
             <div className="adm-stat-label">{i.label}</div>
           </div>
         ))}
+      </div>
+      <div className="adm-card adm-table-wrap" style={{ padding: 0 }}>
+        <table className="adm-table">
+          <thead><tr><th>Miesiąc</th><th>Zamówienia</th><th>Opłacone</th><th>Przychód</th></tr></thead>
+          <tbody>
+            {(s.months || []).map((m) => (
+              <tr key={m.month}>
+                <td style={{ textTransform: 'capitalize' }}><b>{monthLabel(m.month)}</b></td>
+                <td>{m.orders}</td>
+                <td>{m.paid}</td>
+                <td><b>{zl(m.revenue)}</b></td>
+              </tr>
+            ))}
+            {!(s.months || []).length && <tr><td colSpan={4} className="adm-muted">Brak danych</td></tr>}
+          </tbody>
+        </table>
       </div>
       {promo && (
         <div className="adm-card adm-promo">
