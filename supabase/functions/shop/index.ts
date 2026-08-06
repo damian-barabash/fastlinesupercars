@@ -66,8 +66,17 @@ const b64 = (u8: Uint8Array) => {
 }
 
 // ---------- PDF ----------
+// Layout: fractions of image size; x = text center, y = top of text, size = of height.
+const DEFAULT_LAYOUT = {
+  name: { x: 0.235, y: 0.335, size: 0.085, maxW: 0.40 },
+  items: { x: 0.235, y: 0.575, size: 0.048, maxW: 0.42, gap: 0.062 },
+  valid: { x: 0.792, y: 0.908, size: 0.030 },
+  code: { x: 0.792, y: 0.9515, size: 0.030 },
+}
+type Layout = typeof DEFAULT_LAYOUT
+
 async function makeVoucherPdf(opts: {
-  template: string; recipient: string; lines: string[]; validUntil: string; code: string
+  template: string; recipient: string; lines: string[]; validUntil: string; code: string; layout?: Partial<Layout>
 }): Promise<Uint8Array> {
   const [jpgBuf, fontSemi, fontBold] = await Promise.all([
     storageGet(opts.template),
@@ -84,43 +93,41 @@ async function makeVoucherPdf(opts: {
   page.drawImage(img, { x: 0, y: 0, width: W, height: H })
 
   const white = rgb(1, 1, 1)
-  const colX = W * 0.235 // center of left text column
+  const L: Layout = {
+    name: { ...DEFAULT_LAYOUT.name, ...(opts.layout?.name || {}) },
+    items: { ...DEFAULT_LAYOUT.items, ...(opts.layout?.items || {}) },
+    valid: { ...DEFAULT_LAYOUT.valid, ...(opts.layout?.valid || {}) },
+    code: { ...DEFAULT_LAYOUT.code, ...(opts.layout?.code || {}) },
+  }
 
   const fitSize = (text: string, font: typeof bold, want: number, maxW: number) => {
     let s = want
     while (s > 8 && font.widthOfTextAtSize(text, s) > maxW) s -= 1
     return s
   }
-  const centered = (text: string, y: number, font: typeof bold, size: number) => {
+  // x = center fraction, top = top-of-text fraction (editor coordinates)
+  const drawAt = (text: string, cx: number, top: number, font: typeof bold, size: number) => {
     const w = font.widthOfTextAtSize(text, size)
-    page.drawText(text, { x: colX - w / 2, y, size, font, color: white })
+    page.drawText(text, { x: cx * W - w / 2, y: H - top * H - size, size, font, color: white })
   }
 
   // Recipient name — under "DLA"
   const name = opts.recipient.toUpperCase()
-  const nameSize = fitSize(name, bold, H * 0.085, W * 0.40)
-  centered(name, H * (1 - 0.335) - nameSize, bold, nameSize)
+  const nameSize = fitSize(name, bold, H * L.name.size, W * L.name.maxW)
+  drawAt(name, L.name.x, L.name.y, bold, nameSize)
 
-  // Purchased items — under the underlined headline (which sits ~0.50-0.55 of height)
-  let y = H * (1 - 0.575)
-  const lineGap = H * 0.062
+  // Purchased items list
+  let top = L.items.y
   for (const raw of opts.lines.slice(0, 5)) {
     const line = raw.toUpperCase()
-    const s = fitSize(line, semi, H * 0.048, W * 0.42)
-    const w = semi.widthOfTextAtSize(line, s)
-    page.drawText(line, { x: colX - w / 2, y: y - s, size: s, font: semi, color: white })
-    y -= lineGap
+    const s = fitSize(line, semi, H * L.items.size, W * L.items.maxW)
+    drawAt(line, L.items.x, top, semi, s)
+    top += L.items.gap
   }
 
-  // Ważność + kod — bottom right, under FASTLINE SUPERCARS
-  const dSize = H * 0.030
-  const dat = `Ważność: ${opts.validUntil}`
-  const datW = semi.widthOfTextAtSize(dat, dSize)
-  const rightCx = W * 0.792
-  page.drawText(dat, { x: rightCx - datW / 2, y: H * 0.062, size: dSize, font: semi, color: white })
-  const cod = `Kod vouchera: ${opts.code}`
-  const codW = semi.widthOfTextAtSize(cod, dSize)
-  page.drawText(cod, { x: rightCx - codW / 2, y: H * 0.062 - dSize * 1.45, size: dSize, font: semi, color: white })
+  // Ważność + kod
+  drawAt(`Ważność: ${opts.validUntil}`, L.valid.x, L.valid.y, semi, H * L.valid.size)
+  drawAt(`Kod vouchera: ${opts.code}`, L.code.x, L.code.y, semi, H * L.code.size)
 
   return await pdf.save()
 }
@@ -248,7 +255,8 @@ async function pay(body: { order_id: string }) {
 
   let pdfPath = '', pdfBytes: Uint8Array | null = null
   try {
-    pdfBytes = await makeVoucherPdf({ template, recipient, lines, validUntil: validPL, code })
+    const tpl = (await db(`voucher_templates?path=eq.${encodeURIComponent(template)}&select=layout`))?.[0]
+    pdfBytes = await makeVoucherPdf({ template, recipient, lines, validUntil: validPL, code, layout: tpl?.layout })
     pdfPath = `pdf/${code}.pdf`
     await storagePut(pdfPath, pdfBytes, 'application/pdf')
   } catch (e) {

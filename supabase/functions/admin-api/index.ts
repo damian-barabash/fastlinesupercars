@@ -142,6 +142,68 @@ Deno.serve(async (req) => {
         return J({ ok: true, codes: inserted.map((r: { code: string }) => r.code) })
       }
 
+      case 'templates.list': {
+        // storage objects under templates/ + saved layouts + signed preview URLs
+        const lr = await fetch(`${SB_URL}/storage/v1/object/list/vouchery`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prefix: 'templates/', limit: 100, sortBy: { column: 'name', order: 'asc' } }),
+        })
+        const objs = (await lr.json()) as { name: string }[]
+        const layouts = await db('voucher_templates?select=path,layout')
+        const layoutBy: Record<string, unknown> = {}
+        for (const l of layouts || []) layoutBy[l.path] = l.layout
+        const out = []
+        for (const o of objs) {
+          if (!o.name || o.name.startsWith('.')) continue
+          const path = `templates/${o.name}`
+          const sr = await fetch(`${SB_URL}/storage/v1/object/sign/vouchery/${path}`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expiresIn: 3600 }),
+          })
+          const sd = await sr.json().catch(() => ({}))
+          out.push({ path, name: o.name, url: sd.signedURL ? `${SB_URL}/storage/v1${sd.signedURL}` : null, layout: layoutBy[path] || null })
+        }
+        return J(out)
+      }
+
+      case 'templates.upload': {
+        // body: { name, base64, type } → vouchery/templates/<slug>.<ext>
+        const bytes = Uint8Array.from(atob(body.base64), (c) => c.charCodeAt(0))
+        const ext = (body.type === 'image/png') ? 'png' : 'jpg'
+        const slug = String(body.name || 'szablon').toLowerCase()
+          .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'szablon'
+        const path = `templates/${slug}.${ext}`
+        const r = await fetch(`${SB_URL}/storage/v1/object/vouchery/${path}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, 'Content-Type': body.type || 'image/jpeg', 'x-upsert': 'true' },
+          body: bytes,
+        })
+        if (!r.ok) return J({ error: await r.text() }, 500)
+        return J({ ok: true, path })
+      }
+
+      case 'templates.saveLayout': {
+        await db('voucher_templates', {
+          method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' },
+          body: JSON.stringify({ path: body.path, layout: body.layout, updated_at: new Date().toISOString() }),
+        })
+        return J({ ok: true })
+      }
+
+      case 'templates.delete': {
+        const inUse = await db(`products?voucher_template=eq.${encodeURIComponent(body.path)}&select=id`)
+        if (inUse?.length) return J({ error: `Szablon używany przez: ${inUse.map((p: { id: string }) => p.id).join(', ')}` }, 400)
+        await fetch(`${SB_URL}/storage/v1/object/vouchery/${body.path}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY },
+        })
+        await db(`voucher_templates?path=eq.${encodeURIComponent(body.path)}`, { method: 'DELETE' })
+        return J({ ok: true })
+      }
+
       case 'settings.get': {
         const rows = await db('settings?select=key,value')
         const m: Record<string, string> = {}

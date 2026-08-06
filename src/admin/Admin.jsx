@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { adminApi, zl } from '../lib/api.js'
 import { DEFAULTS } from '../data/defaults.js'
 import VisualEditor from './VisualEditor.jsx'
+import Templates from './Templates.jsx'
 import './admin.css'
 
 const TABS = [
@@ -10,6 +11,7 @@ const TABS = [
   ['products', 'Produkty'],
   ['orders', 'Zamówienia'],
   ['vouchers', 'Vouchery'],
+  ['templates', 'Szablony'],
 ]
 
 // grosze <-> złote helpers for form fields
@@ -50,6 +52,7 @@ export default function Admin() {
         {tab === 'products' && <Products />}
         {tab === 'orders' && <Orders />}
         {tab === 'vouchers' && <Vouchers />}
+        {tab === 'templates' && <Templates />}
       </main>
     </div>
   )
@@ -183,11 +186,7 @@ function Stats() {
 
 /* ---------- Produkty (visual editor, prices in zł) ---------- */
 
-const TEMPLATES = [
-  'templates/porsche-911.jpg', 'templates/toyota-gr-supra.jpg', 'templates/alpine-a110.jpg',
-  'templates/bmw-m2.jpg', 'templates/mercedes-a45s-amg.jpg', 'templates/pakiet-niemiecki.jpg',
-  'templates/pakiet-japonski.jpg', 'templates/focus-rs.jpg', 'templates/toyota-gr-yaris.jpg',
-]
+
 
 const slugify = (name) => name.toLowerCase()
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -206,9 +205,13 @@ function Products() {
   const [list, setList] = useState(null)
   const [edit, setEdit] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [templates, setTemplates] = useState([])
 
   const load = () => adminApi('products.list').then(setList).catch(() => {})
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    adminApi('templates.list').then((ts) => setTemplates(ts.map((t) => t.path))).catch(() => {})
+  }, [])
 
   if (!list) return <p className="adm-muted">Ładowanie…</p>
 
@@ -337,7 +340,7 @@ function Products() {
           <h3 className="adm-card-title">Szablon vouchera PDF</h3>
           <div className="field" style={{ maxWidth: 360 }}>
             <select value={edit.voucher_template} onChange={(e) => setEdit({ ...edit, voucher_template: e.target.value })}>
-              {TEMPLATES.map((t) => <option key={t} value={t}>{t.replace('templates/', '').replace('.jpg', '')}</option>)}
+              {(templates.length ? templates : [edit.voucher_template]).map((t) => <option key={t} value={t}>{t.replace('templates/', '').replace(/\.(jpg|png)$/i, '')}</option>)}
             </select>
           </div>
         </div>
