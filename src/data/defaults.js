@@ -120,4 +120,42 @@ export const DEFAULTS = {
 
   // footer
   'ft.copy': 'Copyright © 2026 Fastlinesupercars.pl',
+
+  // --- site images (editable in admin "Zdjęcia" tab) ---
+  'img.hero': '/img/hero-banner-maserati.webp',
+  'img.vban_bg': '/img/voucher-tlo.webp',
+  'img.vban_card': '/img/voucher-karta.webp',
+  'img.steps_map': '/img/kroki-mapa.webp',
+  'img.about_bg': '/img/flota-panorama.webp',
+  'img.rev_bg': '/img/opinie-tlo.webp',
+  'img.gal.1': '/img/gal-1.webp',
+  'img.gal.2': '/img/gal-2.webp',
+  'img.gal.3': '/img/gal-3.webp',
+  'img.gal.4': '/img/gal-4.webp',
+  'img.gal.5': '/img/gal-5.webp',
+  'img.gal.6': '/img/gal-6.webp',
+  'img.gal.7': '/img/gal-7.webp',
+  'img.gal.8': '/img/gal-8.webp',
+  'img.onas_main': '/img/2023_04_lambooiio-min.webp',
+  'img.onas_fra': '/img/2023_03_mariusz_300x300.webp',
 }
+
+// Labels for the admin image editor
+export const IMG_SLOTS = [
+  { key: 'img.hero', label: 'Baner główny (hero)', hint: 'Strona główna — duży baner na górze' },
+  { key: 'img.vban_bg', label: 'Tło sekcji Voucher', hint: 'Strona główna — ciemny band z voucherem' },
+  { key: 'img.vban_card', label: 'Karta vouchera', hint: 'Strona główna — obrazek vouchera w sekcji' },
+  { key: 'img.steps_map', label: 'Grafika „3 proste kroki"', hint: 'Strona główna — mapa drogi' },
+  { key: 'img.about_bg', label: 'Tło „Z pasji do samochodów"', hint: 'Strona główna — panorama floty' },
+  { key: 'img.rev_bg', label: 'Tło sekcji Opinie', hint: 'Strona główna — ciemny band z opiniami' },
+  { key: 'img.gal.1', label: 'Galeria — zdjęcie 1 (szerokie)' },
+  { key: 'img.gal.2', label: 'Galeria — zdjęcie 2' },
+  { key: 'img.gal.3', label: 'Galeria — zdjęcie 3' },
+  { key: 'img.gal.4', label: 'Galeria — zdjęcie 4' },
+  { key: 'img.gal.5', label: 'Galeria — zdjęcie 5' },
+  { key: 'img.gal.6', label: 'Galeria — zdjęcie 6 (szerokie)' },
+  { key: 'img.gal.7', label: 'Galeria — zdjęcie 7' },
+  { key: 'img.gal.8', label: 'Galeria — zdjęcie 8' },
+  { key: 'img.onas_main', label: 'O nas — zdjęcie główne' },
+  { key: 'img.onas_fra', label: 'O nas — Fastline Racing Academy' },
+]

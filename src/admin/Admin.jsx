@@ -1,13 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import { adminApi, zl } from '../lib/api.js'
-import { DEFAULTS } from '../data/defaults.js'
+import { DEFAULTS, IMG_SLOTS } from '../data/defaults.js'
 import './admin.css'
 
-const TABS = ['Statystyki', 'Treści', 'Produkty', 'Zamówienia', 'Vouchery']
+const TABS = [
+  ['stats', 'Statystyki'],
+  ['content', 'Treści'],
+  ['images', 'Zdjęcia'],
+  ['products', 'Produkty'],
+  ['orders', 'Zamówienia'],
+  ['vouchers', 'Vouchery'],
+]
+
+// grosze <-> złote helpers for form fields
+const toZl = (g) => (g == null ? '' : String(g / 100).replace('.', ','))
+const toGr = (z) => Math.round(parseFloat(String(z).replace(',', '.').replace(/[^\d.,-]/g, '') || 0) * 100)
 
 export default function Admin() {
   const [token, setToken] = useState(sessionStorage.getItem('fs_admin_token') || '')
-  const [tab, setTab] = useState('Statystyki')
+  const [tab, setTab] = useState('stats')
 
   useEffect(() => {
     const fn = () => setToken('')
@@ -20,10 +31,13 @@ export default function Admin() {
   return (
     <div className="adm">
       <header className="adm-head">
-        <img src="/img/2024_05_logo-grey.webp" alt="Fastline Supercars" className="adm-logo" />
+        <div className="adm-head-brand">
+          <img src="/img/2024_05_logo-grey.webp" alt="Fastline Supercars" className="adm-logo" />
+          <span className="adm-head-title">Panel</span>
+        </div>
         <nav className="adm-tabs">
-          {TABS.map((t) => (
-            <button key={t} className={tab === t ? 'is-active' : ''} onClick={() => setTab(t)}>{t}</button>
+          {TABS.map(([id, label]) => (
+            <button key={id} className={tab === id ? 'is-active' : ''} onClick={() => setTab(id)}>{label}</button>
           ))}
         </nav>
         <button className="adm-logout" onClick={() => { adminApi('logout').catch(() => {}); sessionStorage.removeItem('fs_admin_token'); setToken('') }}>
@@ -31,11 +45,12 @@ export default function Admin() {
         </button>
       </header>
       <main className="adm-main">
-        {tab === 'Statystyki' && <Stats />}
-        {tab === 'Treści' && <Content />}
-        {tab === 'Produkty' && <Products />}
-        {tab === 'Zamówienia' && <Orders />}
-        {tab === 'Vouchery' && <Vouchers />}
+        {tab === 'stats' && <Stats />}
+        {tab === 'content' && <Content />}
+        {tab === 'images' && <Images />}
+        {tab === 'products' && <Products />}
+        {tab === 'orders' && <Orders />}
+        {tab === 'vouchers' && <Vouchers />}
       </main>
     </div>
   )
@@ -57,8 +72,8 @@ function Login({ onOk }) {
   }
   return (
     <div className="adm-login">
-      <form onSubmit={submit} className="adm-login-box carbon">
-        <img src="/img/2024_05_logo-grey.webp" alt="" style={{ height: 40, marginBottom: 20 }} />
+      <form onSubmit={submit} className="adm-login-box">
+        <img src="/img/2024_05_logo-grey.webp" alt="Fastline Supercars" className="adm-login-logo" />
         <h1>Panel administracyjny</h1>
         <div className="field"><label>Login</label><input value={u} onChange={(e) => setU(e.target.value)} autoFocus /></div>
         <div className="field"><label>Hasło</label><input type="password" value={p} onChange={(e) => setP(e.target.value)} /></div>
@@ -68,6 +83,37 @@ function Login({ onOk }) {
     </div>
   )
 }
+
+/* ---------- helpers ---------- */
+
+async function uploadFile(file) {
+  const b64 = await new Promise((res) => {
+    const r = new FileReader()
+    r.onload = () => res(r.result.split(',')[1])
+    r.readAsDataURL(file)
+  })
+  const d = await adminApi('upload', { name: file.name, base64: b64, type: file.type })
+  return d.url
+}
+
+function UploadBtn({ onDone, children = 'Wgraj plik', className = 'adm-btn-sec' }) {
+  const [busy, setBusy] = useState(false)
+  return (
+    <label className={`${className} ${busy ? 'is-busy' : ''}`}>
+      {busy ? 'Wgrywanie…' : children}
+      <input type="file" accept="image/*" hidden disabled={busy} onChange={async (e) => {
+        const f = e.target.files?.[0]
+        if (!f) return
+        setBusy(true)
+        try { onDone(await uploadFile(f)) } catch (err) { alert('Błąd: ' + err.message) }
+        setBusy(false)
+        e.target.value = ''
+      }} />
+    </label>
+  )
+}
+
+/* ---------- Statystyki ---------- */
 
 function Stats() {
   const [s, setS] = useState(null)
@@ -90,27 +136,28 @@ function Stats() {
   async function savePromo() {
     setSaving(true)
     try {
-      await adminApi('settings.set', { data: { promo_code: promo.code.trim().toUpperCase(), promo_percent: promo.percent, promo_min_grosze: String(Math.round(+promo.min * 100) || 0) } })
+      await adminApi('settings.set', { data: { promo_code: promo.code.trim().toUpperCase(), promo_percent: promo.percent, promo_min_grosze: String(Math.round(parseFloat(String(promo.min).replace(',', '.')) * 100) || 0) } })
     } catch (e) { alert(e.message) }
     setSaving(false)
   }
   return (
     <div>
+      <h2 className="adm-h">Statystyki</h2>
       <div className="adm-stats">
         {items.map((i) => (
-          <div key={i.label} className="adm-stat carbon">
+          <div key={i.label} className="adm-card adm-stat">
             <div className="adm-stat-val">{i.value}</div>
             <div className="adm-stat-label">{i.label}</div>
           </div>
         ))}
       </div>
       {promo && (
-        <div className="adm-promo carbon">
-          <h3>Kod rabatowy (baner na stronie głównej)</h3>
+        <div className="adm-card adm-promo">
+          <h3 className="adm-card-title">Kod rabatowy <span className="adm-muted">(baner na stronie głównej)</span></h3>
           <div className="adm-promo-grid">
             <div className="field"><label>Kod</label><input value={promo.code} onChange={(e) => setPromo({ ...promo, code: e.target.value })} /></div>
             <div className="field"><label>Rabat %</label><input type="number" value={promo.percent} onChange={(e) => setPromo({ ...promo, percent: e.target.value })} /></div>
-            <div className="field"><label>Min. zakupy (zł)</label><input type="number" value={promo.min} onChange={(e) => setPromo({ ...promo, min: e.target.value })} /></div>
+            <div className="field"><label>Min. zakupy (zł)</label><input value={promo.min} onChange={(e) => setPromo({ ...promo, min: e.target.value })} /></div>
             <button className="btn btn-red" disabled={saving} onClick={savePromo}>{saving ? 'Zapisywanie…' : 'Zapisz'}</button>
           </div>
         </div>
@@ -119,17 +166,19 @@ function Stats() {
   )
 }
 
+/* ---------- Treści ---------- */
+
 const GROUPS = {
   'Pasek górny / nawigacja': ['top.'],
-  'Hero (strona główna)': ['hero.'],
-  'Benefity': ['ben.'],
-  'Flota / sekcje główna': ['fleet.', 'vban.', 'steps.'],
+  'Strona główna — hero': ['hero.'],
+  'Strona główna — benefity': ['ben.'],
+  'Strona główna — flota, voucher, kroki': ['fleet.', 'vban.', 'steps.'],
   'O nas (główna + podstrona)': ['about.', 'on.'],
-  'Statystyki': ['stat.'],
+  'Statystyki (liczby)': ['stat.'],
   'FAQ': ['faq.'],
-  'Opinie / kontakt / stopka': ['rev.', 'ct.', 'ft.'],
+  'Opinie, kontakt, stopka': ['rev.', 'ct.', 'ft.'],
   'Oferta': ['of.'],
-  'Kalendarz / tory': ['kal.', 'tory.'],
+  'Kalendarz i tory': ['kal.', 'tory.'],
 }
 
 function Content() {
@@ -161,19 +210,22 @@ function Content() {
   const dirtyCount = Object.keys(dirty).length
 
   return (
-    <div className="adm-content">
+    <div>
       <div className="adm-bar">
-        <p className="adm-muted">Edytuj teksty strony — zmiany są widoczne po zapisaniu.</p>
+        <div>
+          <h2 className="adm-h">Treści strony</h2>
+          <p className="adm-muted">Zmiany będą widoczne na stronie po zapisaniu.</p>
+        </div>
         <button className="btn btn-red" disabled={!dirtyCount || saving} onClick={save}>
           {saving ? 'Zapisywanie…' : dirtyCount ? `Zapisz zmiany (${dirtyCount})` : savedAt ? '✓ Zapisano' : 'Brak zmian'}
         </button>
       </div>
       {Object.entries(GROUPS).map(([g, prefixes]) => {
-        const keys = Object.keys(rows).filter((k) => prefixes.some((p) => k.startsWith(p)))
+        const keys = Object.keys(rows).filter((k) => !k.startsWith('img.') && prefixes.some((p) => k.startsWith(p)))
         if (!keys.length) return null
         return (
-          <details key={g} className="adm-group" open={g.startsWith('Hero')}>
-            <summary>{g} <span className="adm-muted">({keys.length})</span></summary>
+          <details key={g} className="adm-card adm-group">
+            <summary>{g} <span className="adm-count">{keys.length}</span></summary>
             <div className="adm-group-in">
               {keys.map((k) => (
                 <div key={k} className="field">
@@ -193,6 +245,81 @@ function Content() {
   )
 }
 
+/* ---------- Zdjęcia (visual site-image editor) ---------- */
+
+function Images() {
+  const [imgs, setImgs] = useState(null)
+  const [dirty, setDirty] = useState({})
+  const [saving, setSaving] = useState(false)
+  const [savedAt, setSavedAt] = useState(0)
+
+  useEffect(() => {
+    adminApi('content.get').then((r) => {
+      const over = {}
+      for (const x of r) over[x.key] = x.value
+      setImgs({ ...DEFAULTS, ...over })
+    }).catch(() => setImgs({ ...DEFAULTS }))
+  }, [])
+
+  if (!imgs) return <p className="adm-muted">Ładowanie…</p>
+
+  const set = (k, url) => {
+    setImgs({ ...imgs, [k]: url })
+    setDirty({ ...dirty, [k]: url })
+  }
+
+  async function save() {
+    setSaving(true)
+    try {
+      await adminApi('content.set', { data: dirty })
+      setDirty({})
+      setSavedAt(Date.now())
+    } catch (e) { alert('Błąd zapisu: ' + e.message) }
+    setSaving(false)
+  }
+
+  const dirtyCount = Object.keys(dirty).length
+
+  return (
+    <div>
+      <div className="adm-bar">
+        <div>
+          <h2 className="adm-h">Zdjęcia strony</h2>
+          <p className="adm-muted">Kliknij „Zmień", wgraj nowe zdjęcie i zapisz. Zdjęcia produktów edytujesz w zakładce Produkty.</p>
+        </div>
+        <button className="btn btn-red" disabled={!dirtyCount || saving} onClick={save}>
+          {saving ? 'Zapisywanie…' : dirtyCount ? `Zapisz zmiany (${dirtyCount})` : savedAt ? '✓ Zapisano' : 'Brak zmian'}
+        </button>
+      </div>
+      <div className="adm-imgs">
+        {IMG_SLOTS.map((slot) => (
+          <div key={slot.key} className={`adm-card adm-img-slot ${dirty[slot.key] ? 'is-dirty' : ''}`}>
+            <div className="adm-img-preview">
+              <img src={imgs[slot.key]} alt={slot.label} loading="lazy" />
+            </div>
+            <div className="adm-img-meta">
+              <b>{slot.label}</b>
+              {slot.hint && <span className="adm-muted">{slot.hint}</span>}
+              <div className="adm-img-actions">
+                <UploadBtn onDone={(url) => set(slot.key, url)}>Zmień</UploadBtn>
+                {dirty[slot.key] && <span className="adm-dirty-dot">● niezapisane</span>}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ---------- Produkty (visual editor, prices in zł) ---------- */
+
+const TEMPLATES = [
+  'templates/porsche-911.jpg', 'templates/toyota-gr-supra.jpg', 'templates/alpine-a110.jpg',
+  'templates/bmw-m2.jpg', 'templates/mercedes-a45s-amg.jpg', 'templates/pakiet-niemiecki.jpg',
+  'templates/pakiet-japonski.jpg', 'templates/focus-rs.jpg', 'templates/toyota-gr-yaris.jpg',
+]
+
 function Products() {
   const [list, setList] = useState(null)
   const [edit, setEdit] = useState(null)
@@ -203,13 +330,29 @@ function Products() {
 
   if (!list) return <p className="adm-muted">Ładowanie…</p>
 
+  function openEdit(p) {
+    setEdit({
+      ...p,
+      images: [...(p.images || [])],
+      variants: (p.variants || []).map((v) => ({ laps: v.laps, priceZl: toZl(v.price) })),
+      priceFromZl: toZl(p.price_from),
+    })
+  }
+
   async function save() {
     setBusy(true)
     try {
-      const p = { ...edit }
-      p.variants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants
-      p.images = typeof p.images === 'string' ? p.images.split('\n').map((s) => s.trim()).filter(Boolean) : p.images
-      // optimistic: update list immediately
+      const variants = edit.variants
+        .filter((v) => v.laps.trim())
+        .map((v) => ({ laps: v.laps.trim(), price: toGr(v.priceZl) }))
+      const price_from = variants.length ? Math.min(...variants.map((v) => v.price)) : toGr(edit.priceFromZl)
+      const p = {
+        id: edit.id, name: edit.name, subtitle: edit.subtitle, description: edit.description,
+        images: edit.images, cover: edit.cover || edit.images[0] || '',
+        voucher_template: edit.voucher_template, variants, price_from,
+        sort: edit.sort, active: edit.active, category: edit.category,
+        short_specs: edit.short_specs, full_specs: edit.full_specs, tracks: edit.tracks,
+      }
       setList((l) => l.map((x) => (x.id === p.id ? { ...x, ...p } : x)))
       setEdit(null)
       await adminApi('products.save', { product: p })
@@ -218,73 +361,119 @@ function Products() {
     setBusy(false)
   }
 
-  async function uploadImg(e) {
-    const f = e.target.files?.[0]
-    if (!f) return
-    const b64 = await new Promise((res) => {
-      const r = new FileReader()
-      r.onload = () => res(r.result.split(',')[1])
-      r.readAsDataURL(f)
-    })
-    const d = await adminApi('upload', { name: f.name, base64: b64, type: f.type })
-    setEdit((p) => ({ ...p, images: (typeof p.images === 'string' ? p.images : p.images.join('\n')) + '\n' + d.url }))
-  }
-
   if (edit) {
-    const imgs = typeof edit.images === 'string' ? edit.images : (edit.images || []).join('\n')
-    const vars = typeof edit.variants === 'string' ? edit.variants : JSON.stringify(edit.variants || [], null, 1)
     return (
-      <div className="adm-edit">
+      <div>
         <div className="adm-bar">
-          <h2>{edit.name}</h2>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-ghost" onClick={() => setEdit(null)}>Anuluj</button>
-            <button className="btn btn-red" disabled={busy} onClick={save}>{busy ? 'Zapisywanie…' : 'Zapisz'}</button>
+          <h2 className="adm-h">{edit.name}</h2>
+          <div className="adm-bar-btns">
+            <button className="adm-btn-sec" onClick={() => setEdit(null)}>Anuluj</button>
+            <button className="btn btn-red" disabled={busy} onClick={save}>{busy ? 'Zapisywanie…' : 'Zapisz produkt'}</button>
           </div>
         </div>
-        <div className="adm-edit-grid">
-          <div className="field"><label>Nazwa</label><input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></div>
-          <div className="field"><label>Cena od (grosze)</label><input type="number" value={edit.price_from} onChange={(e) => setEdit({ ...edit, price_from: +e.target.value })} /></div>
-          <div className="field"><label>Kolejność</label><input type="number" value={edit.sort} onChange={(e) => setEdit({ ...edit, sort: +e.target.value })} /></div>
-          <div className="field"><label>Aktywny</label>
-            <select value={edit.active ? '1' : '0'} onChange={(e) => setEdit({ ...edit, active: e.target.value === '1' })}>
-              <option value="1">Tak</option><option value="0">Nie</option>
+
+        <div className="adm-card">
+          <h3 className="adm-card-title">Podstawowe</h3>
+          <div className="adm-form-grid">
+            <div className="field"><label>Nazwa</label><input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></div>
+            <div className="field"><label>Kolejność</label><input type="number" value={edit.sort} onChange={(e) => setEdit({ ...edit, sort: +e.target.value })} /></div>
+            <div className="field"><label>Widoczny na stronie</label>
+              <select value={edit.active ? '1' : '0'} onChange={(e) => setEdit({ ...edit, active: e.target.value === '1' })}>
+                <option value="1">Tak</option><option value="0">Nie</option>
+              </select>
+            </div>
+            <div className="field adm-span"><label>Podtytuł</label><input value={edit.subtitle || ''} onChange={(e) => setEdit({ ...edit, subtitle: e.target.value })} /></div>
+            <div className="field adm-span"><label>Opis</label><textarea rows={6} value={edit.description || ''} onChange={(e) => setEdit({ ...edit, description: e.target.value })} /></div>
+          </div>
+        </div>
+
+        <div className="adm-card">
+          <h3 className="adm-card-title">Warianty i ceny <span className="adm-muted">(ceny w złotych)</span></h3>
+          <div className="adm-variants">
+            {edit.variants.map((v, i) => (
+              <div key={i} className="adm-variant-row">
+                <input className="adm-variant-laps" value={v.laps} placeholder="np. 3 okrążenia"
+                  onChange={(e) => setEdit({ ...edit, variants: edit.variants.map((x, j) => j === i ? { ...x, laps: e.target.value } : x) })} />
+                <div className="adm-price-input">
+                  <input value={v.priceZl} placeholder="0"
+                    onChange={(e) => setEdit({ ...edit, variants: edit.variants.map((x, j) => j === i ? { ...x, priceZl: e.target.value } : x) })} />
+                  <span>zł</span>
+                </div>
+                <button className="adm-icon-btn" title="Usuń wariant"
+                  onClick={() => setEdit({ ...edit, variants: edit.variants.filter((_, j) => j !== i) })}>✕</button>
+              </div>
+            ))}
+            <button className="adm-btn-sec" onClick={() => setEdit({ ...edit, variants: [...edit.variants, { laps: '', priceZl: '' }] })}>+ Dodaj wariant</button>
+            {edit.variants.length === 0 && (
+              <div className="adm-price-input" style={{ marginTop: 10 }}>
+                <label style={{ marginRight: 10 }}>Cena stała:</label>
+                <input value={edit.priceFromZl} onChange={(e) => setEdit({ ...edit, priceFromZl: e.target.value })} />
+                <span>zł</span>
+              </div>
+            )}
+            {edit.variants.length > 0 && <p className="adm-muted">„Cena od" na stronie = najtańszy wariant.</p>}
+          </div>
+        </div>
+
+        <div className="adm-card">
+          <h3 className="adm-card-title">Zdjęcia <span className="adm-muted">(kliknij zdjęcie, aby ustawić okładkę)</span></h3>
+          <div className="adm-prod-imgs">
+            {edit.images.map((url, i) => (
+              <div key={url + i} className={`adm-prod-img ${edit.cover === url ? 'is-cover' : ''}`}>
+                <img src={url} alt="" onClick={() => setEdit({ ...edit, cover: url })} />
+                {edit.cover === url && <span className="adm-cover-badge">Okładka</span>}
+                <div className="adm-prod-img-btns">
+                  <button className="adm-icon-btn" title="W lewo" disabled={i === 0} onClick={() => {
+                    const a = [...edit.images]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; setEdit({ ...edit, images: a })
+                  }}>←</button>
+                  <button className="adm-icon-btn" title="Usuń" onClick={() => setEdit({ ...edit, images: edit.images.filter((_, j) => j !== i) })}>✕</button>
+                  <button className="adm-icon-btn" title="W prawo" disabled={i === edit.images.length - 1} onClick={() => {
+                    const a = [...edit.images]; [a[i + 1], a[i]] = [a[i], a[i + 1]]; setEdit({ ...edit, images: a })
+                  }}>→</button>
+                </div>
+              </div>
+            ))}
+            <UploadBtn className="adm-prod-img-add" onDone={(url) => setEdit({ ...edit, images: [...edit.images, url] })}>+ Dodaj zdjęcie</UploadBtn>
+          </div>
+        </div>
+
+        <div className="adm-card">
+          <h3 className="adm-card-title">Szablon vouchera PDF</h3>
+          <div className="field" style={{ maxWidth: 360 }}>
+            <select value={edit.voucher_template} onChange={(e) => setEdit({ ...edit, voucher_template: e.target.value })}>
+              {TEMPLATES.map((t) => <option key={t} value={t}>{t.replace('templates/', '').replace('.jpg', '')}</option>)}
             </select>
           </div>
-          <div className="field" style={{ gridColumn: '1/-1' }}><label>Podtytuł</label><input value={edit.subtitle || ''} onChange={(e) => setEdit({ ...edit, subtitle: e.target.value })} /></div>
-          <div className="field" style={{ gridColumn: '1/-1' }}><label>Opis</label><textarea rows={7} value={edit.description || ''} onChange={(e) => setEdit({ ...edit, description: e.target.value })} /></div>
-          <div className="field" style={{ gridColumn: '1/-1' }}>
-            <label>Zdjęcia (jeden URL na linię) — <label className="adm-upload">dodaj plik<input type="file" accept="image/*" onChange={uploadImg} hidden /></label></label>
-            <textarea rows={5} value={imgs} onChange={(e) => setEdit({ ...edit, images: e.target.value })} />
-          </div>
-          <div className="field"><label>Okładka (URL)</label><input value={edit.cover || ''} onChange={(e) => setEdit({ ...edit, cover: e.target.value })} /></div>
-          <div className="field"><label>Szablon vouchera (storage path)</label><input value={edit.voucher_template || ''} onChange={(e) => setEdit({ ...edit, voucher_template: e.target.value })} /></div>
-          <div className="field" style={{ gridColumn: '1/-1' }}><label>Warianty JSON [{'{'}"laps","price"{'}'}]</label><textarea rows={7} value={vars} onChange={(e) => setEdit({ ...edit, variants: e.target.value })} /></div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="adm-table-wrap">
-      <table className="adm-table">
-        <thead><tr><th></th><th>Produkt</th><th>Cena od</th><th>Warianty</th><th>Aktywny</th><th></th></tr></thead>
-        <tbody>
-          {list.map((p) => (
-            <tr key={p.id}>
-              <td><img src={p.cover} alt="" className="adm-thumb" /></td>
-              <td><b>{p.name}</b><div className="adm-muted">{p.id}</div></td>
-              <td>{zl(p.price_from)}</td>
-              <td>{p.variants?.length || 0}</td>
-              <td>{p.active ? '✓' : '—'}</td>
-              <td><button className="adm-link" onClick={() => setEdit(p)}>Edytuj</button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div>
+      <h2 className="adm-h">Produkty</h2>
+      <div className="adm-table-wrap adm-card">
+        <table className="adm-table">
+          <thead><tr><th></th><th>Produkt</th><th>Cena od</th><th>Warianty</th><th>Widoczny</th><th></th></tr></thead>
+          <tbody>
+            {list.map((p) => (
+              <tr key={p.id}>
+                <td><img src={p.cover} alt="" className="adm-thumb" /></td>
+                <td><b>{p.name}</b><div className="adm-muted">{p.id}</div></td>
+                <td>{zl(p.price_from)}</td>
+                <td>{p.variants?.length || 0}</td>
+                <td>{p.active ? <span className="adm-badge is-active">tak</span> : <span className="adm-badge">nie</span>}</td>
+                <td><button className="adm-btn-sec" onClick={() => openEdit(p)}>Edytuj</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
+
+/* ---------- Zamówienia ---------- */
 
 function Orders() {
   const [rows, setRows] = useState(null)
@@ -297,9 +486,16 @@ function Orders() {
     return () => clearTimeout(t)
   }, [status, search])
 
+  async function del(o) {
+    if (!confirm(`Usunąć zamówienie #${o.number} (${o.customer_name})? Tej operacji nie można cofnąć.`)) return
+    setRows((r) => r.filter((x) => x.id !== o.id))
+    try { await adminApi('orders.delete', { id: o.id }) } catch (e) { alert(e.message) }
+  }
+
   return (
     <div>
       <div className="adm-bar">
+        <h2 className="adm-h">Zamówienia</h2>
         <div className="adm-filters">
           <input placeholder="Szukaj: imię / e-mail…" value={search} onChange={(e) => setSearch(e.target.value)} />
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -311,9 +507,9 @@ function Orders() {
         </div>
       </div>
       {!rows ? <p className="adm-muted">Ładowanie…</p> : (
-        <div className="adm-table-wrap">
+        <div className="adm-table-wrap adm-card">
           <table className="adm-table">
-            <thead><tr><th>#</th><th>Klient</th><th>Pozycje</th><th>Kwota</th><th>Status</th><th>Data</th></tr></thead>
+            <thead><tr><th>#</th><th>Klient</th><th>Pozycje</th><th>Kwota</th><th>Status</th><th>Data</th><th></th></tr></thead>
             <tbody>
               {rows.map((o) => (
                 <tr key={o.id} onClick={() => setOpen(open === o.id ? null : o.id)} className="adm-row-click">
@@ -324,6 +520,7 @@ function Orders() {
                         {o.customer_phone && <div>Tel: {o.customer_phone}</div>}
                         {o.gift_for && <div>Prezent dla: <b>{o.gift_for}</b></div>}
                         {(o.items || []).map((it, i) => <div key={i}>· {it.qty}× {it.name} {it.variant}</div>)}
+                        {o.notes && <div>{o.notes}</div>}
                       </div>
                     )}
                   </td>
@@ -331,9 +528,10 @@ function Orders() {
                   <td>{zl(o.total)}</td>
                   <td><span className={`adm-badge is-${o.status}`}>{o.status}</span></td>
                   <td className="adm-muted">{new Date(o.created_at).toLocaleString('pl-PL')}</td>
+                  <td><button className="adm-icon-btn adm-del" title="Usuń zamówienie" onClick={(e) => { e.stopPropagation(); del(o) }}>✕</button></td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={6} className="adm-muted">Brak zamówień</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={7} className="adm-muted">Brak zamówień</td></tr>}
             </tbody>
           </table>
         </div>
@@ -341,6 +539,8 @@ function Orders() {
     </div>
   )
 }
+
+/* ---------- Vouchery ---------- */
 
 function Vouchers() {
   const [rows, setRows] = useState(null)
@@ -388,6 +588,7 @@ function Vouchers() {
   return (
     <div>
       <div className="adm-bar">
+        <h2 className="adm-h">Vouchery</h2>
         <div className="adm-filters">
           <input placeholder="Szukaj: kod / odbiorca…" value={search} onChange={(e) => setSearch(e.target.value)} />
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -406,11 +607,11 @@ function Vouchers() {
             <option value="shop">Sklep (zakupy)</option>
             <option value="import">Import / wygenerowane</option>
           </select>
+          <button className="btn btn-red" onClick={() => setGenOpen(!genOpen)}>{genOpen ? 'Zamknij' : '+ Dodaj kody'}</button>
         </div>
-        <button className="btn btn-red" onClick={() => setGenOpen(!genOpen)}>{genOpen ? 'Zamknij' : '+ Dodaj kody'}</button>
       </div>
       {genOpen && (
-        <div className="adm-gen carbon">
+        <div className="adm-card adm-gen">
           <div className="field">
             <label>Produkt</label>
             <select value={gen.product_id} onChange={(e) => setGen({ ...gen, product_id: e.target.value, variant: '' })}>
@@ -431,14 +632,14 @@ function Vouchers() {
         </div>
       )}
       {!rows ? <p className="adm-muted">Ładowanie…</p> : (
-        <div className="adm-table-wrap">
+        <div className="adm-table-wrap adm-card">
           <table className="adm-table">
             <thead><tr><th>Kod</th><th>Odbiorca</th><th>Zawartość</th><th>Ważny do</th><th>Status</th><th>PDF</th><th></th></tr></thead>
             <tbody>
               {rows.map((v) => (
                 <tr key={v.id}>
                   <td><b className="adm-code">{v.code}</b></td>
-                  <td>{v.recipient}</td>
+                  <td>{v.recipient || <span className="adm-muted">—</span>}</td>
                   <td className="adm-muted" style={{ whiteSpace: 'pre-line', fontSize: 12 }}>{v.items_text}</td>
                   <td>{v.valid_until?.split('-').reverse().join('.')}</td>
                   <td><span className={`adm-badge is-${v.status}`}>{v.status}</span></td>

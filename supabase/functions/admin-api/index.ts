@@ -84,6 +84,10 @@ Deno.serve(async (req) => {
         await db(`products?id=eq.${encodeURIComponent(body.id)}`, { method: 'DELETE' })
         return J({ ok: true })
 
+      case 'orders.delete':
+        await db(`orders?id=eq.${encodeURIComponent(body.id)}`, { method: 'DELETE' })
+        return J({ ok: true })
+
       case 'orders.list': {
         let q = 'orders?select=*&order=created_at.desc&limit=200'
         if (body.status) q += `&status=eq.${encodeURIComponent(body.status)}`

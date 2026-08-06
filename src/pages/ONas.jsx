@@ -1,9 +1,10 @@
 import { Reveal } from '../components/Reveal.jsx'
 import ContactSection from '../components/ContactSection.jsx'
-import { T } from '../lib/content.jsx'
+import { T, useContent } from '../lib/content.jsx'
 import './onas.css'
 
 export default function ONas() {
+  const { c } = useContent()
   return (
     <main>
       <section className="section page-head">
@@ -20,7 +21,7 @@ export default function ONas() {
             </div>
           </Reveal>
           <Reveal delay={0.12} className="onas-img">
-            <img src="/img/2023_04_lambooiio-min.webp" alt="Supersamochody Fastline" loading="lazy" />
+            <img src={c['img.onas_main']} alt="Supersamochody Fastline" loading="lazy" />
             <div className="onas-img-frame" aria-hidden />
           </Reveal>
         </div>
@@ -30,7 +31,7 @@ export default function ONas() {
         
         <div className="wrap onas-fra-in">
           <Reveal className="onas-fra-img">
-            <img src="/img/2023_03_mariusz_300x300.webp" alt="Mariusz Miękoś — Fastline Racing Academy" loading="lazy" />
+            <img src={c['img.onas_fra']} alt="Mariusz Miękoś — Fastline Racing Academy" loading="lazy" />
           </Reveal>
           <Reveal delay={0.1}>
             <span className="r-label" style={{ color: 'rgba(255,255,255,.7)' }}>Szkolenia</span>
