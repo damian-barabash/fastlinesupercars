@@ -9,9 +9,11 @@
   clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 0 100%); }
 
 .onas-fra { color: #fff; }
-.onas-fra-in { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 56px; align-items: center; padding-block: 110px; }
+.onas-fra-in { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 56px; align-items: center; padding-block: 130px; }
 @media (max-width: 860px) { .onas-fra-in { grid-template-columns: 1fr; } }
 .onas-fra-img img { clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%); box-shadow: 0 24px 60px rgba(0,0,0,.4); }
 .onas-fra-text { color: rgba(255,255,255,.92); margin-top: 18px; line-height: 1.75; }
 .onas-fra .r-label::before { background: var(--red); }
 .onas-fra .r-label { color: #cfcfd6; }
+
+@media (max-width: 720px) { .onas-fra-in { padding-block: 72px; } }
