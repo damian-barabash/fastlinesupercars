@@ -1,0 +1,16 @@
+.faq { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.faq-item { border-bottom: 1px solid var(--line); }
+.faq-q {
+  width: 100%; display: flex; align-items: center; gap: 22px; text-align: left;
+  background: none; border: none; color: #fff; padding: 22px 4px;
+  font-family: var(--display); font-size: clamp(16px, 2vw, 21px); font-weight: 500;
+  letter-spacing: .06em; text-transform: uppercase; transition: color .15s ease;
+}
+.faq-q:hover { color: var(--red-hot); }
+.faq-num { font-size: 13px; color: var(--gray-dark); letter-spacing: .1em; }
+.faq-plus { margin-left: auto; font-size: 26px; font-weight: 400; color: var(--red); transition: transform .25s ease; }
+.faq-item.is-open .faq-plus { transform: rotate(45deg); }
+.faq-a { display: grid; transition: grid-template-rows .3s ease; }
+.faq-a-in { overflow: hidden; }
+.faq-a-in p { color: var(--gray); max-width: 800px; padding: 0 4px 22px 55px; font-size: 15px; }
+@media (max-width: 640px) { .faq-a-in p { padding-left: 4px; } }

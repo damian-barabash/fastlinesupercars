@@ -1,0 +1,824 @@
+[
+ {
+  "id": "porsche-911",
+  "name": "Nowe Porsche 911 4 GTS",
+  "subtitle": "Siła, moc oraz solidna dawka adrenaliny",
+  "category": [
+   "najnowsze",
+   "najszybsze",
+   "pelna-oferta"
+  ],
+  "short_specs": [],
+  "full_specs": [
+   {
+    "label": "Pojemność silnika",
+    "value": "2 981 cm3"
+   },
+   {
+    "label": "Moc silnika",
+    "value": "530 KM"
+   },
+   {
+    "label": "Skrzynia biegów",
+    "value": "Automatyczna"
+   },
+   {
+    "label": "Napęd",
+    "value": "Na wszystkie koła"
+   },
+   {
+    "label": "Przyśpieszenie",
+    "value": "3,0 sec"
+   },
+   {
+    "label": "Prędkość max.",
+    "value": "ok. 320 km/h"
+   }
+  ],
+  "description": "Porsche 911 – z pewnością o nim słyszałeś. Obok tak legendarnego auta nie sposób przejść obojętnie. Jednak po co tylko przechodzić lub o nim wspominać? Lepiej poczuć jego możliwości na własnej skórze! Posiadamy wersję GTS, czyli Gran Turismo Sport. Jeśli jesteś miłośnikiem motoryzacji, nie musimy wyjaśniać tego skrótu. Ale wszystkim pozostałym rozjaśniamy nieco sytuację – oznaczenie to klasyfikuje samochód jako wyścigowy. Sportowy wygląd chwyta za serce niemal każdego fana dynamicznych samochodów, a jeśli dorzucić do tego silnik 530 koni mechanicznych, otrzymujemy prawdziwie wystrzałową mieszankę. Choć Porsche 911 Carrera 4 GTS to model niezwykle niski, to potrafi wznieść się na wyżyny – zwłaszcza na wyżyny prędkości!",
+  "long_description": "",
+  "images": [
+   "/img/2023_04_g-6.webp",
+   "/img/2023_12_1.webp",
+   "/img/2023_12_20230416-img_5221-scaled.webp",
+   "/img/2023_12_kopia-porsche-2.webp",
+   "/img/2023_12_kopia-porsche-1536x999-1.webp"
+  ],
+  "cover": "/img/2023_04_g-6.webp",
+  "price_from": 39900,
+  "variants": [
+   {
+    "laps": "1 okrążenie",
+    "price": 39900
+   },
+   {
+    "laps": "2 okrążenia",
+    "price": 64900
+   },
+   {
+    "laps": "3 okrążenia",
+    "price": 89900
+   },
+   {
+    "laps": "4 okrążenia",
+    "price": 119900
+   },
+   {
+    "laps": "5 okrążeń",
+    "price": 139900
+   }
+  ],
+  "voucher_template": "templates/Porsche 911 4 GTS.jpg",
+  "tracks": [
+   "Tor Łódź",
+   "Tor Modlin",
+   "Tor Wrocław",
+   "Tor Pszczółki",
+   "Tor Poznań"
+  ],
+  "sort": 1,
+  "active": true,
+  "car_list": [
+   "Pojemność: 2 981cm3.",
+   "Moc: 530 KM.",
+   "Skrzynia Biegów: automatyczna PDK.",
+   "Napęd: Na cztery koła.",
+   "Przyspieszenie 0-100km/h: ok. 3 sec.",
+   "Prędkość max: 310km/h."
+  ]
+ },
+ {
+  "id": "toyota-gr-supra",
+  "name": "Toyota GR Supra",
+  "subtitle": "Siła, moc oraz solidna dawka adrenaliny",
+  "category": [
+   "najszybsze",
+   "pelna-oferta"
+  ],
+  "short_specs": [],
+  "full_specs": [
+   {
+    "label": "Pojemność silnika",
+    "value": "2 998 cm3"
+   },
+   {
+    "label": "Moc silnika",
+    "value": "440 KM"
+   },
+   {
+    "label": "Skrzynia biegów",
+    "value": "Automatyczna"
+   },
+   {
+    "label": "Napęd",
+    "value": "Na tylne koła"
+   },
+   {
+    "label": "Przyśpieszenie",
+    "value": "4.0 sec"
+   },
+   {
+    "label": "Prędkość max.",
+    "value": "ok. 300 km/h"
+   }
+  ],
+  "description": "Toyota GR Supra to klasyka gatunku wśród sportowych aut. Jej stosunkowo niewielkie rozmiary sprawiają, że jest szybkim, a także niesamowicie zrywnym autem. W zaledwie 4 sekundy rozpędza się do 100 km/h – całkiem przyzwoicie, prawda? Gwarantuje on niezwykłą przyjemność w trakcie jazdy, najwyższą dawkę adrenaliny oraz poczucie, że mknie się przed siebie jak prawdziwym szybowcem! Jego niesamowita ergonomia oraz stosunek masy do mocy stanowią potwierdzenie wyjątkowości tego modelu. Ciężko Ci w to uwierzyć? W takim razie zobacz, że mamy rację – skorzystaj z możliwości posiadania Toyoty GR Supry na wynajem.",
+  "long_description": "",
+  "images": [
+   "/img/2021_05_g-1.webp",
+   "/img/2021_04_jds_0243.webp",
+   "/img/2023_03_supra_7-1.webp",
+   "/img/2023_12_dasdaf-min-scaled.webp",
+   "/img/2023_12_kopia-nr-supra-2.webp",
+   "/img/2023_12_supra-4.webp",
+   "/img/2023_12_supra-1.webp"
+  ],
+  "cover": "/img/2021_05_g-1.webp",
+  "price_from": 24900,
+  "variants": [
+   {
+    "laps": "1 okrążenie",
+    "price": 24900
+   },
+   {
+    "laps": "2 okrążenia",
+    "price": 39900
+   },
+   {
+    "laps": "3 okrążenia",
+    "price": 54900
+   },
+   {
+    "laps": "4 okrążenia",
+    "price": 69900
+   },
+   {
+    "laps": "5 okrążeń",
+    "price": 84900
+   }
+  ],
+  "voucher_template": "templates/Toyota GR Supra.jpg",
+  "tracks": [
+   "Tor Łódź",
+   "Tor Modlin",
+   "Tor Wrocław",
+   "Tor Pszczółki",
+   "Tor Poznań"
+  ],
+  "sort": 2,
+  "active": true,
+  "car_list": [
+   "Pojemność: 2 998 cm3.",
+   "Moc: 440 KM.",
+   "Skrzynia Biegów: Automatyczna.",
+   "Napęd: Na tylne koła.",
+   "Przyspieszenie 0-100km/h: 4.0 sec.",
+   "Prędkość max: ok. 300 km/h."
+  ]
+ },
+ {
+  "id": "alpine-a110",
+  "name": "Alpine A110",
+  "subtitle": "Siła, moc oraz solidna dawka adrenaliny",
+  "category": [
+   "najnowsze",
+   "pelna-oferta"
+  ],
+  "short_specs": [],
+  "full_specs": [
+   {
+    "label": "Pojemność silnika",
+    "value": "1 800 cm3"
+   },
+   {
+    "label": "Moc silnika",
+    "value": "300 KM"
+   },
+   {
+    "label": "Skrzynia biegów",
+    "value": "Automatyczna"
+   },
+   {
+    "label": "Napęd",
+    "value": "Na tylne koła"
+   },
+   {
+    "label": "Przyśpieszenie",
+    "value": "4.2 sec"
+   },
+   {
+    "label": "Prędkość max.",
+    "value": "ok. 270 km/h"
+   }
+  ],
+  "description": "Alpine A110 powstało jako wskrzeszenie legendarnego modelu z lat 70. Ten łączący w sobie klasykę z nowoczesnością model zagwarantuje Ci niesamowite wrażenia, a to wszystko dzięki swoim podzespołom i mocnemu silnikowi. Wynajem Alpine to jedna z najlepszych opcji, by przeżyć doznania jazdy sportowym samochodem. Dlaczego Alpine A110 jest idealne na wynajem? Samochód ten przede wszystkim posiada lekki silnik 1.8 Turbo, dysponuje mocą aż 300 koni mechanicznych, a także jest wyposażony w dwusprzęgłową skrzynię biegów odpowiadającą za bardzo szybkie przełożenia prosto na tylne koła. Co więcej, silnik w A110 umieszczony jest centralnie za plecami kierowcy, a to pozwala na świetny rozkład masy. Nie zabrakło także elementów gwarantujących bezpieczeństwo, takich jak pasy szelkowe, które przytrzymają Cię w fotelu przy maksymalnych przeciążeniach.\n\nTo wszystko w połączeniu z zaledwie 1080 kg wagi stanowi przepis na idealne, sportowe i bardzo szybkie auto. Chcesz przekonać się o jego osiągach? Nie czekaj – zdecyduj się na wynajem Alpine i sprawdź jego moc jak najszybciej!",
+  "long_description": "",
+  "images": [
+   "/img/2023_04_g-7.webp",
+   "/img/2023_04_alpine.webp",
+   "/img/2023_04_alpine1.webp",
+   "/img/2023_04_alpine2.webp",
+   "/img/2023_04_alpine-2.webp",
+   "/img/2023_04_alpine3.webp",
+   "/img/2023_04_alpine-home.webp",
+   "/img/2023_04_alpinemain.webp",
+   "/img/2023_04_alpinemian.webp",
+   "/img/2023_04_alpineniebmain.webp",
+   "/img/2023_04_kopia-alpine_blue-2048x1366-1.webp",
+   "/img/2023_04_kopia-alpine_green.webp",
+   "/img/2023_04_kopia-alpine_white_new-1536x1024-1.webp"
+  ],
+  "cover": "/img/2023_04_g-7.webp",
+  "price_from": 24900,
+  "variants": [
+   {
+    "laps": "1 okrążenie",
+    "price": 24900
+   },
+   {
+    "laps": "2 okrążenia",
+    "price": 39900
+   },
+   {
+    "laps": "3 okrążenia",
+    "price": 54900
+   },
+   {
+    "laps": "4 okrążenia",
+    "price": 69900
+   },
+   {
+    "laps": "5 okrążeń",
+    "price": 84900
+   }
+  ],
+  "voucher_template": "templates/Alpine A110.jpg",
+  "tracks": [
+   "Tor Łódź",
+   "Tor Modlin",
+   "Tor Wrocław",
+   "Tor Pszczółki",
+   "Tor Poznań"
+  ],
+  "sort": 3,
+  "active": true,
+  "car_list": [
+   "Pojemność: 1 800cm3",
+   "Moc: 300 KM",
+   "Skrzynia Biegów: Automatyczna",
+   "Napęd: Na tylne koła",
+   "Przyspieszenie 0-100km/h: 4.3 sec",
+   "Prędkość max: 270 km/h"
+  ]
+ },
+ {
+  "id": "bmw-m2",
+  "name": "BMW M2",
+  "subtitle": "Siła, moc oraz solidna dawka adrenaliny",
+  "category": [
+   "najnowsze",
+   "pelna-oferta"
+  ],
+  "short_specs": [],
+  "full_specs": [
+   {
+    "label": "Pojemność silnika",
+    "value": "2993 cm3"
+   },
+   {
+    "label": "Moc silnika",
+    "value": "460 KM"
+   },
+   {
+    "label": "Skrzynia biegów",
+    "value": "Automatyczna"
+   },
+   {
+    "label": "Napęd",
+    "value": "Na tylne koła"
+   },
+   {
+    "label": "Przyśpieszenie",
+    "value": "4.0 sec"
+   },
+   {
+    "label": "Prędkość max.",
+    "value": "290 km/h"
+   }
+  ],
+  "description": "BMW M2 z 2023 roku to absolutna gratka dla miłośników dynamicznej jazdy po torze. Jego nowoczesny design i fenomenalne osiągi uczynią twoje doświadczenie na torze niezapomnianym przeżyciem. Zgrabne rozmiary pojazdu sprawiają, że jest nie tylko błyskawiczny, ale także niezwykle zwrotny. W zaledwie 4 sekundy rozpędza się do 100 km/h – oszałamiające, prawda? Oferuje on niezrównane emocje podczas jazdy, intensywną dawkę adrenaliny i poczucie, jakbyś prowadził prawdziwą maszynę wyścigową! Jego perfekcyjna ergonomia i proporcje masy do mocy potwierdzają wyjątkowość tego modelu. Nie wierzysz? Przekonaj się sam, zdobywając szlify kierowcy na torze za kierownicą najnowszego BMW M2 z 2023 roku.",
+  "long_description": "",
+  "images": [
+   "/img/2024_02_g-4.webp",
+   "/img/2024_02_rtk1556-scaled.webp",
+   "/img/2024_02_rtk1824-min-scaled.webp",
+   "/img/2024_02_rtk1399-min-1-scaled.webp"
+  ],
+  "cover": "/img/2024_02_g-4.webp",
+  "price_from": 27900,
+  "variants": [
+   {
+    "laps": "1 okrążenie",
+    "price": 27900
+   },
+   {
+    "laps": "2 okrążenia",
+    "price": 43900
+   },
+   {
+    "laps": "3 okrążenia",
+    "price": 59900
+   },
+   {
+    "laps": "4 okrążenia",
+    "price": 75900
+   },
+   {
+    "laps": "5 okrążeń",
+    "price": 89900
+   }
+  ],
+  "voucher_template": "templates/BMW M2.jpg",
+  "tracks": [
+   "Tor Łódź",
+   "Tor Modlin",
+   "Tor Wrocław",
+   "Tor Pszczółki",
+   "Tor Poznań"
+  ],
+  "sort": 4,
+  "active": true,
+  "car_list": [
+   "Pojemność: 2 993 cm3.",
+   "Moc: 460 KM.",
+   "Skrzynia Biegów: Automatyczna.",
+   "Napęd: Na tylne koła.",
+   "Przyspieszenie 0-100km/h: 4.0 sec.",
+   "Prędkość max: 280km/h"
+  ]
+ },
+ {
+  "id": "mercedes-a45s-amg",
+  "name": "Mercedes A45s AMG",
+  "subtitle": "Siła, moc oraz solidna dawka adrenaliny",
+  "category": [
+   "pelna-oferta"
+  ],
+  "short_specs": [],
+  "full_specs": [
+   {
+    "label": "Pojemność silnika",
+    "value": "2 000 cm3"
+   },
+   {
+    "label": "Moc silnika",
+    "value": "421 KM"
+   },
+   {
+    "label": "Skrzynia biegów",
+    "value": "Automatyczna"
+   },
+   {
+    "label": "Napęd",
+    "value": "Na wszystkie koła"
+   },
+   {
+    "label": "Przyśpieszenie",
+    "value": "3.8 sec"
+   },
+   {
+    "label": "Prędkość max.",
+    "value": "ok. 285 km/h"
+   }
+  ],
+  "description": "Mercedes A45 AMG to auto niesamowicie wszechstronne, które świetnie nadaje się do miasta, w trasy, ale co najważniejsze – jest bardzo szybkim autem na torze. To z nim osiągniesz prędkość, o jakiej tylko możesz pomarzyć na klasycznej drodze. Posiada fabrycznie zakuty silnik o pojemności 2 litrów i mocy aż 400 koni mechanicznych. Do tego dodajemy napęd na 4 koła oraz bardzo szybką, dwusprzęgłową skrzynię biegów – jesteśmy przekonani, że cała specyfikacja to przepis na samochód idealny. Świetny wydech zapewnia niezapomniane doznania i powoduje, że jest to auto, które wzbudzi emocje u każdego!",
+  "long_description": "",
+  "images": [
+   "/img/2023_04_g-2.webp",
+   "/img/2023_12_kopia-shutterstock_2210251431-scaled.webp",
+   "/img/2023_12_20230416-img_4695-scaled.webp",
+   "/img/2023_12_photooo-min-scaled.webp",
+   "/img/2023_12_kopia-ddlk9kpturbxy8ynmm5yjk4odi5ywu0nge1zgi1mtqwywy1zdmwnjjins5qcgeslqlnaxqawsovagdna8dcw94aaaewbq.webp"
+  ],
+  "cover": "/img/2023_04_g-2.webp",
+  "price_from": 24900,
+  "variants": [
+   {
+    "laps": "1 okrążenie",
+    "price": 24900
+   },
+   {
+    "laps": "2 okrążenia",
+    "price": 39900
+   },
+   {
+    "laps": "3 okrążenia",
+    "price": 54900
+   },
+   {
+    "laps": "4 okrążenia",
+    "price": 69900
+   },
+   {
+    "laps": "5 okrążeń",
+    "price": 84900
+   }
+  ],
+  "voucher_template": "templates/Mercedes A45s AMG.jpg",
+  "tracks": [
+   "Tor Łódź",
+   "Tor Modlin",
+   "Tor Wrocław",
+   "Tor Pszczółki",
+   "Tor Poznań"
+  ],
+  "sort": 5,
+  "active": true,
+  "car_list": [
+   "Pojemność: 1991 cm3.",
+   "Moc: 421 KM.",
+   "Skrzynia Biegów: automatyczna.",
+   "Napęd: na cztery koła.",
+   "Przyspieszenie 0-100km/h: 4.1 sec.",
+   "Prędkość max: ok. 285 km/h."
+  ]
+ },
+ {
+  "id": "pakiet-niemiecki",
+  "name": "Pakiet Niemiecki",
+  "subtitle": "Siła, moc oraz solidna dawka adrenaliny",
+  "category": [
+   "pelna-oferta",
+   "pojedynki-aut"
+  ],
+  "short_specs": [],
+  "full_specs": [
+   {
+    "label": "Pojemność silnika",
+    "value": "2 981 i 2 000 cm3"
+   },
+   {
+    "label": "Moc silnika",
+    "value": "530 i 421 KM"
+   },
+   {
+    "label": "Skrzynia biegów",
+    "value": "Automatyczna i Manualna"
+   },
+   {
+    "label": "Napęd",
+    "value": "Na wszystkie koła"
+   },
+   {
+    "label": "Przyśpieszenie",
+    "value": "3.0 i 3.8 sek."
+   },
+   {
+    "label": "Prędkość max.",
+    "value": "320 i 285 km/h"
+   }
+  ],
+  "description": "Porsche 911 – z pewnością o nim słyszałeś. Obok tak legendarnego auta nie sposób przejść obojętnie. Jednak po co tylko przechodzić lub o nim wspominać? Lepiej poczuć jego możliwości na własnej skórze! Posiadamy wersję GTS, czyli Gran Turismo Sport. Jeśli jesteś miłośnikiem motoryzacji, nie musimy wyjaśniać tego skrótu. Ale wszystkim pozostałym rozjaśniamy nieco sytuację – oznaczenie to klasyfikuje samochód jako wyścigowy. Sportowy wygląd chwyta za serce niemal każdego fana dynamicznych samochodów, a jeśli dorzucić do tego silnik 530 koni mechanicznych, otrzymujemy prawdziwie wystrzałową mieszankę. Choć Porsche 911 Carrera 4 GTS to model niezwykle niski, to potrafi wznieść się na wyżyny – zwłaszcza na wyżyny prędkości!",
+  "long_description": "",
+  "images": [
+   "/img/2023_04_g-8.webp",
+   "/img/2023_03_mercedes-yellow1.webp",
+   "/img/2024_05_pakiet-niemiecki-kolor.webp",
+   "/img/2023_12_poesche2.webp",
+   "/img/2023_12_poesche3.webp",
+   "/img/2023_12_kopia-porsche-1536x999-1.webp",
+   "/img/2023_12_kopia-ddlk9kpturbxy8ynmm5yjk4odi5ywu0nge1zgi1mtqwywy1zdmwnjjins5qcgeslqlnaxqawsovagdna8dcw94aaaewbq.webp",
+   "/img/2023_12_20230416-img_5221-scaled.webp",
+   "/img/2023_12_1.webp"
+  ],
+  "cover": "/img/2023_04_g-8.webp",
+  "price_from": 52900,
+  "variants": [
+   {
+    "laps": "2 okrążenia",
+    "price": 52900
+   },
+   {
+    "laps": "4 okrążenia",
+    "price": 94900
+   }
+  ],
+  "voucher_template": "templates/Pakiet Niemiecki.jpg",
+  "tracks": [
+   "Tor Łódź",
+   "Tor Modlin",
+   "Tor Wrocław",
+   "Tor Pszczółki",
+   "Tor Poznań"
+  ],
+  "sort": 6,
+  "active": true,
+  "car_list": [
+   "Pojemność: 2 981 i 1 991 cm3.",
+   "Moc: 530 i 421 KM",
+   "Skrzynia Biegów: Automatyczna",
+   "Napęd: Na cztery koła",
+   "Przyspieszenie 0-100km/h: ok. 3 i 4,1 sek.",
+   "Prędkość max: 310 i 285 km/h"
+  ]
+ },
+ {
+  "id": "pakiet-japonski",
+  "name": "Pakiet Japoński",
+  "subtitle": "Siła, moc oraz solidna dawka adrenaliny",
+  "category": [
+   "pelna-oferta",
+   "pojedynki-aut"
+  ],
+  "short_specs": [],
+  "full_specs": [
+   {
+    "label": "Pojemność silnika",
+    "value": "2 998 i 1 618 cm3"
+   },
+   {
+    "label": "Moc silnika",
+    "value": "440 i 300 KM"
+   },
+   {
+    "label": "Skrzynia biegów",
+    "value": "Automatyczna i Manualna"
+   },
+   {
+    "label": "Napęd",
+    "value": "Na tył i cztery koła"
+   },
+   {
+    "label": "Przyśpieszenie",
+    "value": "4.0 i 4.9 sek."
+   },
+   {
+    "label": "Prędkość max.",
+    "value": "300 i 250 km/h"
+   }
+  ],
+  "description": "Porsche 911 – z pewnością o nim słyszałeś. Obok tak legendarnego auta nie sposób przejść obojętnie. Jednak po co tylko przechodzić lub o nim wspominać? Lepiej poczuć jego możliwości na własnej skórze! Posiadamy wersję GTS, czyli Gran Turismo Sport. Jeśli jesteś miłośnikiem motoryzacji, nie musimy wyjaśniać tego skrótu. Ale wszystkim pozostałym rozjaśniamy nieco sytuację – oznaczenie to klasyfikuje samochód jako wyścigowy. Sportowy wygląd chwyta za serce niemal każdego fana dynamicznych samochodów, a jeśli dorzucić do tego silnik 530 koni mechanicznych, otrzymujemy prawdziwie wystrzałową mieszankę. Choć Porsche 911 Carrera 4 GTS to model niezwykle niski, to potrafi wznieść się na wyżyny – zwłaszcza na wyżyny prędkości!",
+  "long_description": "",
+  "images": [
+   "/img/2023_04_g-9.webp",
+   "/img/2023_03_supra_7-1.webp",
+   "/img/2023_12_dasdaf-min-scaled.webp",
+   "/img/2023_12_kopia-nr-supra-2.webp",
+   "/img/2023_04_kopia-yaris-1536x1024-1.webp",
+   "/img/2023_04_toyota-gr-yaris_1.webp",
+   "/img/2023_04_toyota-gr-yaris_2-1.webp",
+   "/img/2023_04_toyota-gr-yaris_3.webp",
+   "/img/2023_12_supra-3.webp",
+   "/img/2023_12_supra-4.webp",
+   "/img/2023_12_supra-1.webp"
+  ],
+  "cover": "/img/2023_04_g-9.webp",
+  "price_from": 35900,
+  "variants": [
+   {
+    "laps": "2 okrążenia",
+    "price": 35900
+   },
+   {
+    "laps": "4 okrążenia",
+    "price": 63900
+   }
+  ],
+  "voucher_template": "templates/Pakiet Japoński.jpg",
+  "tracks": [
+   "Tor Łódź",
+   "Tor Modlin",
+   "Tor Wrocław",
+   "Tor Pszczółki",
+   "Tor Poznań"
+  ],
+  "sort": 7,
+  "active": true,
+  "car_list": [
+   "Pojemność: 2 998 i 1 618 cm3.",
+   "Moc: 440 i 300 KM",
+   "Skrzynia Biegów: Automatyczna i Manualna",
+   "Napęd: Na tył i cztery koła",
+   "Przyspieszenie 0-100km/h: 4 i 4.9 sek.",
+   "Prędkość max: 300 i 250 km/h"
+  ]
+ },
+ {
+  "id": "focus-rs",
+  "name": "Ford Focus RS",
+  "subtitle": "Siła, moc oraz solidna dawka adrenaliny",
+  "category": [
+   "pelna-oferta"
+  ],
+  "short_specs": [],
+  "full_specs": [
+   {
+    "label": "Pojemność silnika",
+    "value": "2 261 cm3"
+   },
+   {
+    "label": "Moc silnika",
+    "value": "ok. 400 KM"
+   },
+   {
+    "label": "Skrzynia biegów",
+    "value": "Manualna"
+   },
+   {
+    "label": "Napęd",
+    "value": "Na cztery koła"
+   },
+   {
+    "label": "Przyśpieszenie",
+    "value": "4.4 sec"
+   },
+   {
+    "label": "Prędkość max.",
+    "value": "285 km/h"
+   }
+  ],
+  "description": "",
+  "long_description": "",
+  "images": [
+   "/img/2022_06_g-5.webp",
+   "/img/2022_06_focus-rs-1.webp",
+   "/img/2022_06_focus-home.webp",
+   "/img/2021_04_ford2.webp"
+  ],
+  "cover": "/img/2022_06_g-5.webp",
+  "price_from": 29900,
+  "variants": [
+   {
+    "laps": "1 okrążenie",
+    "price": 29900
+   },
+   {
+    "laps": "2 okrążenia",
+    "price": 36900
+   },
+   {
+    "laps": "3 okrążenia",
+    "price": 59900
+   },
+   {
+    "laps": "4 okrążenia",
+    "price": 89900
+   },
+   {
+    "laps": "5 okrążeń",
+    "price": 114900
+   }
+  ],
+  "voucher_template": "templates/Ford Focus RS.jpg",
+  "tracks": [
+   "Tor Łódź",
+   "Tor Modlin",
+   "Tor Wrocław",
+   "Tor Pszczółki",
+   "Tor Poznań"
+  ],
+  "sort": 8,
+  "active": true,
+  "car_list": []
+ },
+ {
+  "id": "toyota-gr-yaris",
+  "name": "Toyota GR Yaris",
+  "subtitle": "Siła, moc oraz solidna dawka adrenaliny",
+  "category": [
+   "pelna-oferta"
+  ],
+  "short_specs": [],
+  "full_specs": [
+   {
+    "label": "Pojemność silnika",
+    "value": "1 618 cm3"
+   },
+   {
+    "label": "Moc silnika",
+    "value": "300 KM"
+   },
+   {
+    "label": "Skrzynia biegów",
+    "value": "Manualna"
+   },
+   {
+    "label": "Napęd",
+    "value": "Na wszystkie koła"
+   },
+   {
+    "label": "Przyśpieszenie",
+    "value": "4.8 sec"
+   },
+   {
+    "label": "Prędkość max.",
+    "value": "ok. 250 km/h"
+   }
+  ],
+  "description": "Przedstawiamy sportowe wydanie klasycznej, miejskiej wersji Toyoty – GR Yaris! Ten prawdziwie dynamiczny model potrafi pędzić z maksymalną prędkością 250 km/h. Napęd na cztery koła dodatkowo gwarantuje odpowiednie warunki jezdne, a to ma znaczenie nie tylko na torze, ale przede wszystkim podczas zwykłej jazdy po mieście. Niewielka masa oraz rozmiary sprawiają, że Toyota GR Yaris jest stworzona do codziennego poruszania się po wąskich uliczkach, choć silnik mówi sam za siebie – może z powodzeniem pokonywać nawet dalsze podróże, wykręcając przy tym zawrotne prędkości. W końcu 300 KM to zadziwiająca moc jak na tak niewielkie auto. Atrakcyjny wynajem.",
+  "long_description": "",
+  "images": [
+   "/img/2023_04_g-3.webp",
+   "/img/2023_03_yaris-scaled-1.webp",
+   "/img/2023_04_toyota-gr-yaris_1.webp",
+   "/img/2023_04_toyota-gr-yaris_2-1.webp",
+   "/img/2023_04_toyota-gr-yaris_3.webp"
+  ],
+  "cover": "/img/2023_04_g-3.webp",
+  "price_from": 19900,
+  "variants": [
+   {
+    "laps": "1 okrążenie",
+    "price": 19900
+   },
+   {
+    "laps": "2 okrążenia",
+    "price": 32900
+   },
+   {
+    "laps": "3 okrążenia",
+    "price": 45900
+   },
+   {
+    "laps": "4 okrążenia",
+    "price": 58900
+   },
+   {
+    "laps": "5 okrążeń",
+    "price": 69900
+   }
+  ],
+  "voucher_template": "templates/Toyota GR Yaris.jpg",
+  "tracks": [
+   "Tor Łódź",
+   "Tor Modlin",
+   "Tor Wrocław",
+   "Tor Pszczółki",
+   "Tor Poznań"
+  ],
+  "sort": 9,
+  "active": true,
+  "car_list": [
+   "Pojemność: 1618 cm3.",
+   "Moc: 300 KM.",
+   "Skrzynia Biegów: Manualna.",
+   "Napęd: Na wszystkie koła.",
+   "Przyspieszenie 0-100km/h: 4.9 sec.",
+   "Prędkość max: ok. 250 km/h."
+  ]
+ },
+ {
+  "id": "voucher",
+  "name": "Voucher",
+  "subtitle": "Siła, moc oraz solidna dawka adrenaliny",
+  "category": [
+   "voucher"
+  ],
+  "short_specs": [],
+  "full_specs": [
+   {
+    "label": "Pojemność silnika",
+    "value": "22"
+   },
+   {
+    "label": "Moc silnika",
+    "value": "22"
+   },
+   {
+    "label": "Skrzynia biegów",
+    "value": "2"
+   },
+   {
+    "label": "Napęd",
+    "value": "2"
+   },
+   {
+    "label": "Przyśpieszenie",
+    "value": "2"
+   },
+   {
+    "label": "Prędkość max.",
+    "value": "2"
+   }
+  ],
+  "description": "",
+  "long_description": "",
+  "images": [
+   "/img/2024_06_image-13.webp"
+  ],
+  "cover": "/img/2024_06_image-13.webp",
+  "price_from": 89900,
+  "variants": [],
+  "voucher_template": "templates/Alpine A110.jpg",
+  "tracks": [
+   "Tor Łódź",
+   "Tor Modlin",
+   "Tor Wrocław",
+   "Tor Pszczółki",
+   "Tor Poznań"
+  ],
+  "sort": 10,
+  "active": true,
+  "car_list": []
+ }
+]

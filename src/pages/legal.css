@@ -1,0 +1,5 @@
+.legal { max-width: 860px; }
+.legal-body { display: flex; flex-direction: column; gap: 14px; color: #c6c6cd; font-size: 15px; }
+.legal-h { font-size: 20px; margin-top: 26px; padding-left: 14px; border-left: 3px solid var(--red); }
+.legal-li { list-style: none; padding-left: 24px; position: relative; }
+.legal-li::before { content: ''; position: absolute; left: 0; top: 10px; width: 10px; height: 2.5px; background: var(--red); }

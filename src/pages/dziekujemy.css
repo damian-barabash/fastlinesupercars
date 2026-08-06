@@ -1,0 +1,29 @@
+.dz-in { display: flex; flex-direction: column; align-items: center; text-align: center; padding-block: 40px; }
+.dz-badge {
+  width: 76px; height: 76px; background: var(--red); color: #fff; font-size: 34px;
+  display: flex; align-items: center; justify-content: center; margin-bottom: 28px;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  box-shadow: 0 12px 40px rgba(200,16,46,.4);
+}
+.dz-spinner {
+  width: 28px; height: 28px; border: 3px solid rgba(255,255,255,.35); border-top-color: #fff;
+  border-radius: 50%; animation: dzspin .8s linear infinite;
+}
+@keyframes dzspin { to { transform: rotate(360deg); } }
+.dz-lead { font-size: 17px; margin-top: 16px; max-width: 560px; }
+
+.dz-voucher {
+  margin-top: 36px; border: 1px solid var(--line); padding: 30px 56px;
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
+  transition: border-color .4s ease, box-shadow .4s ease;
+}
+.dz-voucher.is-ready { border-color: rgba(200,16,46,.6); box-shadow: 0 0 60px rgba(200,16,46,.15); }
+.dz-voucher-label { font-family: var(--label); font-weight: 600; font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: var(--gray); }
+.dz-voucher-code { font-family: var(--display); font-size: clamp(30px, 5vw, 44px); letter-spacing: .1em; margin-top: 8px; }
+.dz-code-skeleton { opacity: .35; animation: dzpulse 1.2s ease infinite; }
+@keyframes dzpulse { 50% { opacity: .15; } }
+.dz-voucher-valid { color: var(--gray); font-size: 14px; margin-top: 8px; }
+.dz-voucher-valid b { color: #fff; }
+
+.dz-next { margin-top: 56px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.dz-ctas { display: flex; gap: 16px; margin-top: 18px; flex-wrap: wrap; justify-content: center; }

@@ -1,0 +1,694 @@
+{
+"regulamin": [
+{
+"t": "h",
+"x": "Regulamin Płatności"
+},
+{
+"t": "h",
+"x": "REGULAMIN PŁATNOŚCI ELEKTRONICZNYCH PRZY ZAKUPIE USŁUGI WYPOŻYCZENIA POJAZDÓW SPORTOWYCH NALEŻĄCYCH DO FASTLINE, CELEM JAZDY NA TORZE POSTANOWIENIA OGÓLNE"
+},
+{
+"t": "li",
+"x": "Serwis internetowy Fastline dostępny pod adresem internetowym www.fastlinesupercars.pl., prowadzony jest przez Fastline, czyli – Greywolf S.A. z siedzibą w Warszawie przy ul. Wita Stwosza 48, wpisana do rejestru przedsiębiorców KRS pod numerem KRS 0000647602, prowadzonym przez Sąd Rejonowy dla m.st. Warszawy, kapitał zakładowy 100.000,00 PLN, NIP 521-375-63-45, REGON 365905570."
+},
+{
+"t": "li",
+"x": "Niniejszy Regulamin (dalej: Regulamin) skierowany jest zarówno do Konsumentów, jak i do Przedsiębiorców korzystających z Serwisu."
+},
+{
+"t": "li",
+"x": "Regulamin określa zasady płatności elektronicznych w przypadku zakupu za pośrednictwem Serwisu Usług polegających na udostępnieniu przez Fastline pojazdu sportowego."
+},
+{
+"t": "li",
+"x": "Zasady przetwarzania i ochrony danych osobowych przez Fastline w związku z dokonywaniem zakupu Usług online zostały określone w Polityce Prywatności znajdującej się na Stronie."
+},
+{
+"t": "li",
+"x": "Klient zobowiązany jest do zapoznania się z Regulaminem przed dokonaniem płatności za Usługę Dokonanie płatności oznacza akceptację Regulaminu."
+},
+{
+"t": "li",
+"x": "Kupno Usługi za pośrednictwem Serwisu wiąże się z zapłatą Ceny."
+},
+{
+"t": "li",
+"x": "Ceny zawarte w Cenniku mogą ulegać zmianie."
+},
+{
+"t": "li",
+"x": "W stosunku do Klientów składających zamówienie zastosowanie mają Ceny zawarte w Cenniku aktualnym na dzień składania zamówienia."
+},
+{
+"t": "h",
+"x": "I. DEFINICJE"
+},
+{
+"t": "li",
+"x": "Konsument– osoba fizyczna zawierająca z Fastline umowę w ramach serwisu, której przedmiot nie jest związany bezpośrednio z jej działalnością gospodarczą lub zawodową."
+},
+{
+"t": "li",
+"x": "Klient – każdy podmiot zamawiający Usługę za pośrednictwem Serwisu."
+},
+{
+"t": "li",
+"x": "Usługodawca lub Fatsline – Greywolf S.A. z siedzibą w Warszawie przy ul. Wita Stwosza 48, wpisana do rejestru przedsiębiorców KRS pod numerem KRS 0000647602, prowadzonym przez Sąd Rejonowy dla m.st. Warszawy, kapitał zakładowy 100.000,00 PLN, NIP 521-375-63-45, REGON 365905570"
+},
+{
+"t": "li",
+"x": "Przedsiębiorca– osoba fizyczna, osoba prawna i jednostka organizacyjna niebędąca osobą prawną, której odrębna ustawa przyznaje zdolność prawną, wykonująca we własnym imieniu działalność gospodarczą, która korzysta z Serwisu."
+},
+{
+"t": "li",
+"x": "Serwis – serwis internetowy prowadzony przez Fastline pod adresem internetowym: fastlinesupercars.pl, umożliwiający zakup Usługi."
+},
+{
+"t": "li",
+"x": "Cennik – dokument określający ceny Usług świadczonych przez Fastline, w tym ceny Usług w zależności od marki i rodzaju udostępnianego pojazdu sportowego."
+},
+{
+"t": "li",
+"x": "Umowa – umowa na wykonanie Usługi, czyli umowa o udostępnienie pojazdu sportowego,"
+},
+{
+"t": "li",
+"x": "Umowa zawarta na odległość – umowa zawarta z Klientem w ramach zorganizowanego systemu zawierania umów na odległość (w ramach Serwisu), bez jednoczesnej fizycznej obecności stron, z wyłącznym wykorzystaniem jednego lub większej liczby środków porozumiewania się na odległość do chwili zawarcia umowy włącznie."
+},
+{
+"t": "li",
+"x": "Regulamin– niniejszy regulamin Serwisu"
+},
+{
+"t": "li",
+"x": "Zamówienie – oświadczenie woli Klienta składane za pomocą Formularza Zamówienia i zmierzające bezpośrednio do zawarcia Umowy z Fastline."
+},
+{
+"t": "li",
+"x": "Operator Płatności – Centrum Rozliczeniowe Przelewy 24, za pośrednictwem którego przeprowadzane są rozliczenia transakcji zakupu Usług w Serwisie za pomocą karty kredytowej lub przelewu internetowego, właściciel serwisu przelewy24.pl."
+},
+{
+"t": "li",
+"x": "Konto – konto klienta w Serwisie, w którym gromadzone są dane podane przez Klienta oraz informacje o złożonych przez niego Zamówieniach w Serwisie."
+},
+{
+"t": "li",
+"x": "Formularz rejestracji– formularz dostępny w Serwisie, umożliwiający utworzenie Konta."
+},
+{
+"t": "li",
+"x": "Koszyk – element oprogramowania Serwisu, w którym widoczne są wybrane przez Klienta Usługi, a także istnieje możliwość ustalenia i modyfikacji danych Zamówienia."
+},
+{
+"t": "li",
+"x": "Usługa – usługa będąca przedmiotem Umowy zawieranej pomiędzy Fastline i Klientem, polegająca na udostępnieniu pojazdu sportowego, który to pojazd Fastline udostępnia Klientowi, w sposób określny w Umowie."
+},
+{
+"t": "li",
+"x": "WYMOGI TECHNICZNE KONIECZNE DO KORZYSTANIA Z SERWISU"
+},
+{
+"t": "p",
+"x": "Do korzystania z Serwisu, w tym przeglądania asortymentu usług Fastline oraz składania zamówień na Usługi niezbędne są:"
+},
+{
+"t": "li",
+"x": "urządzenie końcowe z dostępem do sieci Internet i przeglądarką internetową typu Google Chrome."
+},
+{
+"t": "li",
+"x": "aktywne konto poczty elektronicznej (e-mail),"
+},
+{
+"t": "li",
+"x": "włączona obsługa plików cookies,"
+},
+{
+"t": "li",
+"x": "zainstalowany program ."
+},
+{
+"t": "h",
+"x": "III. ZASADY SKŁADANIA ZAMÓWIENIA"
+},
+{
+"t": "li",
+"x": "Zakupu Usługi za pomocą Serwisu można dokonać według oferty dostępnej na stroniefastlinesupercars.pl w Cenniku Usług."
+},
+{
+"t": "li",
+"x": "Klient dokonuje zakupu wykonując polecenia pojawiające się na stronie internetowej Serwisu. Potwierdzenie zamówienia, w tym akceptacja przez Klienta jego treści i ceny odbywa się przez użycie ikony „Przejdź do płatności”. Po jego wyborze i naciśnięciu Klient przekierowywany jest do płatności internetowych serwisu Przelewy 24, gdzie wykonując przelew określa wybrane zamówienie, tytuł przelewu, kwotę i dokonuje płatności."
+},
+{
+"t": "h",
+"x": "IV. METODY PŁATNOŚCI ONLINE"
+},
+{
+"t": "li",
+"x": "Fastline umożliwia dokonywanie Płatności za (Usługę) za pomocą serwisu przelewy24.pl, na którą to stronę Klient zostanie przekierowany bezpośrednio po założeniu zamówienia. Klient może dokonywać płatności na zasadach określonych w regulaminie dokonywania wpłat za pośrednictwem www.przelewy24.pl."
+},
+{
+"t": "li",
+"x": "Klient ma możliwość dokonania zapłaty za pomocą tych form płatności jakie udostępnia serwis przelewy24.pl."
+},
+{
+"t": "li",
+"x": "Warunkiem zakupu Usługi jest uzyskanie przez Fastline od Operatora Płatności potwierdzenia dostępności środków niezbędnych do zapłaty Ceny. Fastline zastrzega sobie, iż proces uzyskania potwierdzenia, o którym mowa w zdaniu poprzednim może trwać do 25 minut od momentu dokonania przez Klienta Płatności."
+},
+{
+"t": "li",
+"x": "W sytuacji braku uzyskania przez Fastline potwierdzenia dostępności środków niezbędnych do zapłaty Ceny od Operatora Płatności w czasie określonym w ust. 3 lub w przypadku uzyskania informacji o braku dostępności środków niezbędnych do dokonania transakcji, Fastline poinformuje Klienta, że transakcja nie może być zrealizowana."
+},
+{
+"t": "li",
+"x": "Po dokonaniu zakupu za pośrednictwem Strony Klient proszony jest o kontakt z Fastline celem ustalenia dokładnego terminu wykonania Usługi oraz szczegółów z nią związanych."
+},
+{
+"t": "li",
+"x": "Fastline nie ponosi odpowiedzialności za niezłożenie zamówienia lub niedostarczenie potwierdzenia zamówienia, niemożność dokonania zapłaty ceny spowodowane błędnym lub niedokładnym podaniem danych przez Klienta, problemami z siecią Internet lub innymi okolicznościami, na które Fastline nie miał wpływu."
+},
+{
+"t": "li",
+"x": "Fastline wystawia oraz przesyła faktury elektroniczne. Prośby o faktury należy składać elektronicznie na adres: [email protected]"
+},
+{
+"t": "h",
+"x": "V. ZASADY REKLAMACJI"
+},
+{
+"t": "li",
+"x": "Reklamacje dotyczące:"
+},
+{
+"t": "li",
+"x": "Usługi – czyli sposobu jej wykonania, jakości lub inne uwagi, dotyczące Usługi"
+},
+{
+"t": "li",
+"x": "Serwisu – czyli jego nieprawidłowego działania, uszkodzeń i nieprawidłowości w otrzymanych dokumentach, lub procedurze zamówienia, należy zgłaszać Fatsline za pośrednictwem poczty elektronicznej na adres: [email protected]"
+},
+{
+"t": "li",
+"x": "dane Klienta, zgodne z danymi podanymi przy Zamawianiu Usługi w Serwisie,"
+},
+{
+"t": "li",
+"x": "datę dokonania zakupu Usługi oraz numer identyfikatora transakcji, której dotyczy reklamacja,"
+},
+{
+"t": "li",
+"x": "opis przedmiotu reklamacji."
+},
+{
+"t": "li",
+"x": "Prawidłowo zgłoszone reklamacje zostaną rozpatrzone nie później niż w ciągu 7 dni roboczych liczonych od momentu otrzymania informacji o powstałej nieprawidłowości, zaś w przypadkach szczególnie skomplikowanych nie później niż w ciągu 10 dni roboczych."
+},
+{
+"t": "li",
+"x": "Reklamacje dotyczące płatności należy zgłaszać do Operatora Płatności w trybie przewidzianym w regulaminie serwisu przelewy24.pl dostępnym na stronie internetowej Operatora Płatności."
+},
+{
+"t": "li",
+"x": "Reklamacje, o których mowa w ust. 4 powyżej będą rozpatrywane przez zarządzającego serwisem przelewy24.pl."
+},
+{
+"t": "h",
+"x": "VI. PRAWO ODSTĄPIENIA OD UMOWY"
+},
+{
+"t": "li",
+"x": "Konsument może odstąpić od Umowy w terminie 14 dni od dnia zawarcia Umowy, składając Fastline oświadczenie o odstąpieniu od Umowy."
+},
+{
+"t": "li",
+"x": "Oświadczenie może być wysłane za pomocą tradycyjnej poczty bądź drogą elektroniczną poprzez przesłanie oświadczenia na adres e-mail Fastline lub listownie na adres Fastline. Oświadczenie można złożyć również na formularzu, którego wzór załącznik do ustawy z dnia 30 maja 2014 roku o prawach konsumenta, jednak nie jest to obowiązkowe."
+},
+{
+"t": "li",
+"x": "W przypadku przesłania oświadczenia przez Konsumenta drogą elektroniczną, Fastline niezwłocznie prześle Konsumentowi na podany przez Konsumenta adres e-mail potwierdzenie otrzymania oświadczenia o odstąpieniu od Umowy."
+},
+{
+"t": "li",
+"x": "W przypadku odstąpienia od Umowy zawartej na odległość Umowę uważa się za niezawartą."
+},
+{
+"t": "li",
+"x": "W przypadku odstąpienia od Umowy Fastline zwraca Konsumentowi niezwłocznie, nie później niż w terminie 14 dni od dnia otrzymania oświadczenia Konsumenta o odstąpieniu od Umowy dokonane przez niego płatności."
+},
+{
+"t": "li",
+"x": "Zwrotu płatności Konsument dokona przy użyciu takich samych metod płatności, jakie zostały przez Konsumenta użyte w pierwotnej transakcji, chyba że Konsument wyraźnie zgodził się na inne rozwiązanie, które nie będzie się wiązało dla niego z żadnymi kosztami."
+},
+{
+"t": "li",
+"x": "Prawo do odstąpienia od umowy zawartej na odległość nie przysługuje Konsumentowi w odniesieniu do Umowy o świadczenie usług, jeżeli Fastline wykonał w pełni usługę za wyraźną zgodą Konsumenta, który został poinformowany przez rozpoczęciem świadczenia, że po spełnieniu świadczenia przez Fastline utraci prawo odstąpienia od Umowy."
+},
+{
+"t": "li",
+"x": "Zgodnie z art. 38 pkt 12 ustawy o prawach konsumenta z dnia 30 maja 2014 r. Klientowi będącemu konsumentem nie przysługuje prawo do odstąpienia od umowy zawartej na odległość, o świadczenie usług związanych z wypoczynkiem, wydarzeniami rozrywkowymi, sportowymi lub kulturalnymi, jeżeli w umowie oznaczono dzień lub okres świadczenia usługi. W związku z tym prawo do odstąpienia od Umowy przestaje przysługiwać po dokonaniu wyboru i ustaleniu przez Konsumenta z Fastline dokładnej daty wykorzystania zakupionej Usługi."
+},
+{
+"t": "h",
+"x": "VII. DANE OSOBOWE W SERWISIE INTERNETOWYM"
+},
+{
+"t": "li",
+"x": "Fastline jest Administratorem danych osobowych udostępnianych przez Klientów, w zakresie, w jakim są one wykorzystywane przez Fastline przy realizacji zamówienia, wykonywania Usług i ewentualnej procedurze reklamacyjnej, a także dla celów marketingowych (przesyłania informacji handlowych i marketingowych drogą elektroniczną na podstawie odrębnej zgody udzielonej przez Klienta)."
+},
+{
+"t": "li",
+"x": "Przetwarzanie danych osobowych odbywa się w celu realizacji zamówienia, a także w celu realizacji prawnie uzasadnionego interesu Administratora, w celach marketingowych oraz innych, wymaganych przez obowiązujące przepisy (np. sporządzanie dokumentacji podatkowej, obsługa procesu reklamacyjnego czy zwrot Ceny). Szczegółowe informacje na temat przetwarzania danych osobowych dostępne są w Polityce Prywatności."
+},
+{
+"t": "li",
+"x": "Klient ma prawo dostępu do podanych danych osobowych, ich poprawiania, sprostowania, żądania ich usunięcia, prawo ograniczenia przetwarzania, wniesienia sprzeciwu co do przetwarzania danych osobowych i prawo przenoszenia danych. Klientowi przysługuje także prawo wniesienia skargi do organu nadzorczego, jeżeli dane są przetwarzane niezgodnie z wymogami prawnymi."
+},
+{
+"t": "li",
+"x": "Za zgodą Klienta dane mogą być również przetwarzane w celu przesłania informacji handlowej drogą elektroniczną, za pośrednictwem udostępnionego adresu e-mail lub/i numer telefonu. W zakresie, w jakim dane przetwarzane są na podstawie odrębnej zgody Klienta, przysługuje im prawo cofnięcia zgody w dowolnym momencie. Pozostanie to jednak bez wpływu na zgodność z prawem przetwarzania danych, którego dokonano przed jej cofnięciem."
+},
+{
+"t": "li",
+"x": "W ramach realizacji zamówienia, dane osobowe Klienta mogą zostać ujawnione podmiotom trzecim, świadczącym usługi dla i w imieniu Fastline. Podmioty trzecie zostaną zobowiązane do zastosowania odpowiednich środków bezpieczeństwa oraz do przetwarzania danych osobowych wyłącznie w celach wskazanych przez Administratora."
+},
+{
+"t": "li",
+"x": "Dane osobowe będą przetwarzane tylko tak długo, jak długo są niezbędne do realizacji zamówienia, przy czym okres przetwarzania danych osobowych zostanie każdorazowo przedłużony o okres przedawnienia roszczeń, na wypadek dochodzenia ewentualnych roszczeń lub obrony przed takimi roszczeniami."
+},
+{
+"t": "li",
+"x": "W zakresie i celu działań marketingowych dane osobowe przetwarzane będą przez czas prowadzenia przez Administratora działań marketingowych albo do czasu wyrażenia przez Klienta sprzeciwu wobec dalszego przetwarzania danych w celach marketingowych lub do czasu cofnięcia zgody na otrzymywanie komunikatów marketingowych na adres e-mail i/lub numer telefonu."
+},
+{
+"t": "li",
+"x": "na podstawie prawnie uzasadnionych interesów – Klient może zgłosić sprzeciw z przyczyn związanych z jego szczególną sytuacją – taki sprzeciw wymaga uzasadnienia;"
+},
+{
+"t": "li",
+"x": "na potrzeby marketingu bezpośredniego – Klient może zgłosić sprzeciw w każdym przypadku – taki sprzeciw nie wymaga uzasadnienia."
+},
+{
+"t": "h",
+"x": "VIII. POSTANOWIENIA KOŃCOWE"
+},
+{
+"t": "li",
+"x": "Regulamin jest udostępniony na stronie www.fastlinesupercars.pl"
+},
+{
+"t": "li",
+"x": "Regulamin może zostać zmieniony przez Fastline, w każdym czasie, jednakże w sposób niewpływający negatywnie na sytuację Klientów, którzy zakupili Usługi przed zmianą Regulaminu."
+},
+{
+"t": "li",
+"x": "W przypadku zmiany Regulaminu, Fastline zobowiązuje się do umieszczenia informacji o tym fakcie na stronie Serwisu, z minimum 3-dniowym wyprzedzeniem."
+},
+{
+"t": "li",
+"x": "Fastline nie ponosi odpowiedzialności za funkcjonowanie sieci Internet, za pośrednictwem której Klient dokonuje zakupu Usługi, oraz za indywidualne ustawienia telefonów komórkowych oraz sposobu ich konfiguracji, a także ustawienia występujące u operatorów sieci komórkowych. Operatorzy GSM odpowiadają jedynie za prawidłowe wykonanie usług telekomunikacyjnych w zakresie przesyłania wiadomości SMS i transferu danych."
+},
+{
+"t": "li",
+"x": "W sprawach nieuregulowanych Regulaminem stosuje się przepisy ustawy z dnia 30 maja 2014 r. o prawach konsumenta Dz.U.2014.poz.827 oraz w zakresie wskazanym w powyższej ustawie przepisy Kodeksu Cywilnego."
+}
+],
+"privacy": [
+{
+"t": "h",
+"x": "Polityka Prywatności"
+},
+{
+"t": "h",
+"x": "I. DEFINICJE"
+},
+{
+"t": "p",
+"x": "W niniejszej Polityce bezpieczeństwa danych osobowych wskazanym poniżej terminom nadaje się następujące znaczenia:"
+},
+{
+"t": "li",
+"x": "Fastline – Greywolf S.A. z siedzibą w Warszawie przy ul. Wita Stwosza 48, wpisana do rejestru przedsiębiorców KRS pod numerem KRS 0000647602, prowadzonym przez Sąd Rejonowy dla m.st. Warszawy, kapitał zakładowy 100.000,00 PLN, NIP 521-375-63-45, REGON 365905570, – właściciel serwisu dostępnego pod adresem www.fastlinesupercars.pl."
+},
+{
+"t": "li",
+"x": "Polityka lub Polityka bezpieczeństwa danych osobowych – niniejszy dokument"
+},
+{
+"t": "li",
+"x": "RODO– Rozporządzenie Parlamentu Europejskiego i Rady (UE) 2016/679 z dnia 27 kwietnia 2016 r. w sprawie ochrony osób fizycznych w związku z przetwarzaniem danych osobowych i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/WE."
+},
+{
+"t": "li",
+"x": "Serwis – serwis internetowy prowadzony przez Fastline, dostępny pod adresem fastlinesupercars.pl"
+},
+{
+"t": "li",
+"x": "Usługi – funkcjonalności Serwisu, które Fastline udostępnia Użytkownikowi, w tym możliwość utworzenia konta, zakup usługi lub vouchera, oraz usługi wykonywane przez Fastline, oferowane m.in. za pośrednictwem Serwisu."
+},
+{
+"t": "li",
+"x": "Cookies lub Ciasteczka – dane informatyczne, w szczególności pliki tekstowe, które przechowywane są w urządzeniu końcowym Użytkownika, ułatwiające korzystanie ze stron internetowych Serwisu. Cookies zazwyczaj zawierają nazwę strony internetowej, z której pochodzą, czas przechowywania ich na urządzeniu końcowym oraz unikalny identyfikator."
+},
+{
+"t": "li",
+"x": "Dane osobowe – informacje o zidentyfikowanej lub możliwej do zidentyfikowania osobie fizycznej („osobie, której dane dotyczą”); możliwa do zidentyfikowania osoba fizyczna to osoba, którą można bezpośrednio lub pośrednio zidentyfikować, w szczególności na podstawie identyfikatora takiego jak imię i nazwisko, numer identyfikacyjny, dane o lokalizacji, identyfikator internetowy lub jeden bądź kilka szczególnych czynników określających fizyczną, fizjologiczną, genetyczną, psychiczną, ekonomiczną, kulturową lub społeczną tożsamość osoby fizycznej."
+},
+{
+"t": "li",
+"x": "Administrator danych osobowych – Greywolf S.A. z siedzibą w Warszawie przy ul. Wita Stwosza 48, wpisana do rejestru przedsiębiorców KRS pod numerem KRS 0000647602, prowadzonym przez Sąd Rejonowy dla m.st. Warszawy, kapitał zakładowy 100.000,00 PLN, NIP 521-375-63-45, REGON 365905570,"
+},
+{
+"t": "li",
+"x": "Inspektor Ochrony Danych Osobowych (IODO) – osoba, wyznaczona przez Administratora lub podmiot przetwarzający, posiadająca odpowiednie kwalifikacje zawodowe, wiedzę fachową na temat prawa i praktyk w dziedzinie ochrony danych osobowych oraz umiejętności wymagane do wypełniania zadań związanych z ochroną tych danych."
+},
+{
+"t": "li",
+"x": "Zbiór danych– każdy uporządkowany zestaw danych osobowych, dostępny według określonych kryteriów, niezależnie od tego, czy zestaw ten jest scentralizowany, zdecentralizowany czy rozproszony funkcjonalnie lub geograficznie."
+},
+{
+"t": "li",
+"x": "Przetwarzanie danych– jakiekolwiek operacje wykonywane na danych osobowych lub zestawach danych osobowych w sposób zautomatyzowany lub niezautomatyzowany, takie jak: zbieranie, utrwalanie, organizowanie, porządkowanie, przechowywanie, adaptowanie lub modyfikowanie, pobieranie, przeglądanie, wykorzystywanie, ujawnianie poprzez przesłanie, rozpowszechnienie lub innego rodzaju udostępnianie, dopasowywanie lub łączenie, ograniczanie, usuwanie lub niszczenie."
+},
+{
+"t": "li",
+"x": "Zgoda na przetwarzanie danych osobowych – dobrowolne, konkretne, świadome i jednoznaczne oświadczenie woli osoby, której dane są przetwarzane przyzwalające na przetwarzanie dotyczących jej danych osobowych."
+},
+{
+"t": "li",
+"x": "Naruszenie ochrony danych osobowych – naruszenie bezpieczeństwa prowadzące do przypadkowego lub niezgodnego z prawem zniszczenia, utracenia, zmodyfikowania, nieuprawnionego ujawnienia lub nieuprawnionego dostępu do danych osobowych przesyłanych, przechowywanych lub w inny sposób przetwarzanych."
+},
+{
+"t": "li",
+"x": "System informatyczny– zespół współpracujących ze sobą urządzeń, programów oraz narzędzi programowych zastosowanych w celu przetwarzania danych."
+},
+{
+"t": "li",
+"x": "Użytkownik – osoba, która odwiedza stronę fastlinesupercars.pl i podstrony, czyli Serwis, bądź Fanpage Fastline w portalach społecznościowych."
+},
+{
+"t": "li",
+"x": "Voucher – dokument o określonej wartości umożlwiający jego wymianę lub zakup za jego pomocą wybranej usługi."
+},
+{
+"t": "li",
+"x": "Zabezpieczenie danych– zabezpieczenie danych poprzez wdrożenie i eksploatację środków technicznych i organizacyjnych zapewniających ochronę danych przed ich nieuprawnionym przetwarzaniem."
+},
+{
+"t": "li",
+"x": "Fanpage Fastline – strony, konta, kanały prowadzone przez Fastline w portalach społecznościowych takich jak: Facebook, Tik Tok, Instagram, YouTube, Twitter, LinkedIn."
+},
+{
+"t": "li",
+"x": "Loga systemowe – specjalny program komputerowy służący do przechowywania chronologicznego zapisu zawierającego informację o zdarzeniach i działaniach dotyczących systemu informatycznego służącego do świadczenia usług przez Administratora,"
+},
+{
+"t": "h",
+"x": "II. CEL I PRZEDMIOT POLITYKI PRYWATNOŚCI"
+},
+{
+"t": "li",
+"x": "Celem Polityki prywatności danych osobowych wprowadzonych w Fastline Advertising sp. z o.o. w Warszawie jest określenie zasad przetwarzania, ochrony i udostępniania danych osobowych, gromadzonych i przetwarzanych w przedsiębiorstwie prowadzonym przez spółkę zwaną dalej Fastline, jak również czynny nadzór nad procesem przetwarzania danych osobowych w zgodzie z obowiązującymi przepisami prawa."
+},
+{
+"t": "li",
+"x": "Polityka bezpieczeństwa danych osobowych w Fastline obowiązuje wszystkie osoby realizujące jakiekolwiek zadania na rzecz i w imieniu Fastline, niezależnie od podstawy prawnej wykonywania tychże zadań oraz stanowiska pełnionego w Fastline, jak i w innych podmiotach kooperujących z Fastline."
+},
+{
+"t": "h",
+"x": "III. ADMINISTRATOR DANYCH OSOBOWYCH"
+},
+{
+"t": "li",
+"x": "Administratorem danych osobowych jest Greywolf S.A. z siedzibą w Warszawie przy ul. Wita Stwosza 48, wpisana do rejestru przedsiębiorców KRS pod numerem KRS 0000647602, prowadzonym przez Sąd Rejonowy dla m.st. Warszawy, kapitał zakładowy 100.000,00 PLN, NIP 521-375-63-45, REGON 365905570."
+},
+{
+"t": "li",
+"x": "Zadania Administratora danych osobowych:"
+},
+{
+"t": "p",
+"x": "Administrator danych zobowiązany jest zastosować środki techniczne i organizacyjne zapewniające ochronę przetwarzanych danych osobowych, odpowiednie do zagrożeń oraz kategorii danych objętych ochroną, a w szczególności powinien zabezpieczyć dane przed ich udostępnianiem osobom nieupoważnionym, zabraniem przez osobę nieuprawnioną, przetwarzaniem z naruszeniem ustawy oraz zmianą, utratą, uszkodzeniem lub zniszczeniem."
+},
+{
+"t": "p",
+"x": "W szczególności Administrator danych zobowiązany jest do zapewnienia, aby dane osobowe były:"
+},
+{
+"t": "p",
+"x": "przetwarzane zgodnie z prawem, rzetelnie i w sposób przejrzysty dla osoby, której dane dotyczą, oraz zbierane w konkretnych, wyraźnych i prawnie uzasadnionych celach, jak i dalej nieprzetwarzane w sposób niezgodny z tymi celami. Administrator dba o to, aby przetwarzane dane osobowe były adekwatne, stosowne oraz ograniczone do tego, co jest niezbędne dla celów, w których są przetwarzane. Obowiązkiem Administratora danych jest dbać o to, aby dane przechowywane były w formie i w sposób wymagane prawem, oraz przez okres nie dłuższy, niż jest to niezbędne do celów, w których dane te są przetwarzane. Administrator dba o to, aby dane osobowe były przetwarzane w sposób zapewniający im odpowiednie bezpieczeństwo, w tym ochronę przed niedozwolonym lub niezgodnym z prawem przetwarzaniem oraz przypadkową utratą, zniszczeniem lub uszkodzeniem, za pomocą odpowiednich środków technicznych lub organizacyjnych. Wszystkie osoby mające dostęp do danych są do tego uprawnione i mają określony zakres, sposób i cel ich przetwarzania."
+},
+{
+"t": "li",
+"x": "Administrator danych wyznacza IODO w przypadkach, w których RODO wprowadza taki obowiązek, lub w sytuacji, gdy sam uzna to za konieczne, przy czym obowiązki IODO pełni Magdalena Miękoś."
+},
+{
+"t": "li",
+"x": "Do przetwarzania danych mogą być dopuszczone wyłącznie osoby posiadające upoważnienie nadane przez Administratora danych. Osoby te są zobowiązane zachować w tajemnicy dane osobowe oraz sposoby ich zabezpieczania, jak i wszelkie informacje mogące służyć do ich udostępnienia lub przetworzenia w sposób niezgodny z zasadami polityki."
+},
+{
+"t": "h",
+"x": "IV. SYTUACJE W KTÓRYCH NASTĘPUJE PRZETWARZANIE DANYCH OSOBOWYCH"
+},
+{
+"t": "p",
+"x": "Dane osobowe osób korzystających z Serwisu, a nie będących zarejestrowanymi Użytkownikami (tj. osoby nie posiadające konta lub profilu w Serwisie) przetwarzane są przez Administratora. Są to m.in. adres IP lub inne identyfikatory oraz informacje gromadzone za pośrednictwem plików cookies lub innych podobnych technologii. Dane te przetwarzane są przez Administratora:"
+},
+{
+"t": "li",
+"x": "w celu świadczenia usług drogą elektroniczną w zakresie udostępniana Użytkownikom treści gromadzonych w Serwisie lub utrzymywania w Serwisie treści zamieszczonych przez Użytkowników (np. wpisy, komentarze) – podstawą prawną przetwarzania jest niezbędność przetwarzania do wykonania umowy (art. 6 ust. 1 lit. b) RODO),"
+},
+{
+"t": "li",
+"x": "w celach analitycznych i statystycznych – podstawą prawną przetwarzania jest uzasadniony interes Administratora (art. 6 ust. 1 lit. f) RODO), polegający na prowadzeniu analiz aktywności Użytkowników, a także ich preferencji, w celu poprawy stosowanych funkcjonalności i świadczonych usług;"
+},
+{
+"t": "li",
+"x": "w celu ewentualnego ustalenia, dochodzenia lub obrony przed roszczeniami – podstawą prawną przetwarzania jest uzasadniony interes Administratora (art. 6 ust. 1 lit. f) RODO) polegający na ochronie swoich praw;"
+},
+{
+"t": "li",
+"x": "w celach marketingowych Administratora oraz innych podmiotów, w szczególności związanych z prezentowaniem reklamy behawioralnej – zasady przetwarzania danych osobowych w celach marketingowych zostały opisane w sekcji MARKETING."
+},
+{
+"t": "p",
+"x": "Aktywność Użytkownika w Serwisie, w tym jego dane osobowe, są rejestrowane w Logach. Zebrane w Logach informacje przetwarzane są przede wszystkim w celach związanych ze świadczeniem usług. Administrator przetwarza również te dane w celach technicznych, administracyjnych, na potrzeby zapewnienia bezpieczeństwa systemu informatycznego oraz zarządzania nim, a także w celach analitycznych i statystycznych – w tym zakresie podstawą prawną przetwarzania jest prawnie uzasadniony interes administratora (art. 6 ust. 1 lit. f) RODO)."
+},
+{
+"t": "p",
+"x": "Podczas rejestracji w Serwisie, osoby rejestrujące się proszone są o podanie danych niezbędnych do utworzenia i obsługi konta. W celu ułatwienia obsługi konta Użytkownik może podać też dodatkowe dane. W przypadku danych określonych jako obowiązkowe ich podanie jest wymagane w celu założenia i obsługi konta, a ich niepodanie powoduje niemożliwość założenia konta. Podanie danych innych niż oznaczone jako obowiązkowe jest dobrowolne. Dane osobowe są przetwarzane:"
+},
+{
+"t": "li",
+"x": "w celu świadczenia usług związanych z prowadzeniem i obsługą konta w Serwisie – podstawą prawną przetwarzania jest niezbędność przetwarzania do wykonania umowy (art. 6 ust. 1 lit. b) RODO), a w zakresie danych podanych fakultatywnie – podstawą prawną przetwarzania jest zgoda (art. 6 ust. 1 lit. a) RODO);"
+},
+{
+"t": "li",
+"x": "w celach analitycznych i statystycznych – podstawą prawną przetwarzania jest uzasadniony interes Administratora (art. 6 ust. 1 lit. f) RODO), polegający na prowadzeniu analiz aktywności Użytkowników w Serwisie i sposobu korzystania z konta, a także ich preferencji, w celu poprawy stosowanych funkcjonalności;"
+},
+{
+"t": "li",
+"x": "w celu ewentualnego ustalenia, dochodzenia lub obrony przed roszczeniami – podstawą prawną przetwarzania jest uzasadniony interes Administratora (art. 6 ust. 1 lit. f) RODO) polegający na ochronie swoich praw;"
+},
+{
+"t": "li",
+"x": "w celach marketingowych Administratora oraz innych podmiotów – zasady przetwarzania danych osobowych w celach marketingowych zostały opisane w sekcji MARKETING."
+},
+{
+"t": "li",
+"x": "Jeżeli Administrator umożliwia logowanie się do konta w Serwisie za pośrednictwem portali społecznościowych (Facebook, G+, Instagram, Twitter), i Użytkownik wybierze tę formę logowania, Serwis, po uprzednim wyrażeniu zgody przez Użytkownika, pobierze z konta Użytkownika w ramach portalu społecznościowego jedynie dane niezbędne do rejestracji i obsługi konta."
+},
+{
+"t": "li",
+"x": "Jeżeli Użytkownik umieszcza w Serwisie jakiekolwiek dane osobowe innych osób (w tym ich imię i nazwisko, adres, numer telefonu lub adres e-mail), może to uczynić jedynie pod warunkiem nienaruszenia przepisów obowiązującego prawa i dóbr osobistych tych osób."
+},
+{
+"t": "p",
+"x": "Złożenie przez Użytkownika zamówienia zakupu usługi wiąże się z przetwarzaniem jego danych osobowych. Złożenie zamówienia wymaga posiadania konta w Serwisie. Podanie danych oznaczonych jako obowiązkowe jest wymagane w celu przyjęcia i obsługi zamówienia, a ich niepodanie skutkuje brakiem przyjęcia. Podanie pozostałych danych jest dobrowolne. Dane osobowe są przetwarzane:"
+},
+{
+"t": "li",
+"x": "w celu realizacji złożonego zamówienia – podstawą prawną przetwarzania jest niezbędność przetwarzania do wykonania umowy (art. 6 ust. 1 lit. b) RODO); w zakresie danych podanych fakultatywnie, podstawą prawną przetwarzania jest zgoda (art. 6 ust. 1 lit. a) RODO);"
+},
+{
+"t": "li",
+"x": "w celu realizacji obowiązków ustawowych ciążących na Administratorze, wynikających w szczególności z przepisów podatkowych i przepisów o rachunkowości – podstawą prawną przetwarzania jest obowiązek prawny (art. 6 ust. 1 lit. c) RODO);"
+},
+{
+"t": "li",
+"x": "w celach analitycznych i statystycznych – podstawą prawną przetwarzania jest uzasadniony interes Administratora (art. 6 ust. 1 lit. f) RODO), polegający na prowadzeniu analiz aktywności Użytkowników w Serwisie, a także ich preferencji zakupowych, w celu doskonalenia stosowanych funkcjonalności;"
+},
+{
+"t": "li",
+"x": "w celu ewentualnego ustalenia, dochodzenia lub obrony przed roszczeniami – podstawą prawną przetwarzania jest uzasadniony interes Administratora (art. 6 ust. 1 lit. f) RODO), polegający na ochronie jego praw."
+},
+{
+"t": "p",
+"x": "W kontaktach z Administratorem możliwe jest wykorzystanie gotowych, elektronicznych formularzy kontaktowych. Skorzystanie z formularza wymaga podania danych osobowych, które są niezbędne do skontaktowania się z Użytkownikiem i udzielenia odpowiedzi na zapytanie. Użytkownik może podać także inne dane, w celu ułatwienia kontaktu lub obsługi zapytania. Podanie danych oznaczonych jako obowiązkowe jest wymagane w celu przyjęcia i obsługi zapytania, a ich niepodanie skutkuje brakiem możliwości jego obsługi. Podanie pozostałych danych jest dobrowolne. Dane osobowe są przetwarzane:"
+},
+{
+"t": "li",
+"x": "w celu identyfikacji nadawcy oraz obsługi jego zapytania przesłanego przez udostępniony formularz – podstawą prawną przetwarzania jest niezbędność przetwarzania do wykonania umowy o świadczenie usługi (art. 6 ust. 1 lit. b) RODO);"
+},
+{
+"t": "li",
+"x": "w celach analitycznych i statystycznych – podstawą prawną przetwarzania jest uzasadniony interes Administratora (art. 6 ust. 1 lit. f) RODO), polegający na prowadzeniu statystyk zapytań zgłaszanych przez Użytkowników za pośrednictwem Serwisu w celu doskonalenia jego funkcjonalności."
+},
+{
+"t": "p",
+"x": "Administrator przetwarza dane osobowe Użytkowników w celu realizowania działań mających na celu dostosowywanie treści, które mogą polegać na:"
+},
+{
+"t": "li",
+"x": "wyświetlaniu Użytkownikowi treści, które są dostosowane do jego deklarowanych preferencji;"
+},
+{
+"t": "li",
+"x": "wyświetlaniu Użytkownikowi treści odpowiadających jego geolokalizacji (treści o charakterze lokalnym);"
+},
+{
+"t": "li",
+"x": "prowadzeniu innego rodzaju działań związanych z dostosowywaniem treści do zainteresowań Użytkownika."
+},
+{
+"t": "p",
+"x": "Podstawą prawną przetwarzania danych osobowych w celu personalizacji i dostosowywania treści jest uzasadniony interes Administratora (art. 6 ust. 1 lit. f) RODO)."
+},
+{
+"t": "p",
+"x": "W celu realizowania działań personalizacji i dostosowywania treści, Administrator w niektórych przypadkach wykorzystuje profilowanie. Oznacza to, że dzięki automatycznemu przetwarzaniu danych, Administrator dokonuje oceny wybranych czynników dotyczących osób fizycznych, w celu analizy ich zachowania lub stworzenia prognozy zachowań na przyszłość."
+},
+{
+"t": "p",
+"x": "Administrator przetwarza dane osobowe Użytkowników w celu realizowania działań reklamowych i marketingowych, które mogą polegać na:"
+},
+{
+"t": "li",
+"x": "wyświetlaniu Użytkownikowi treści marketingowych, które nie są dostosowane do jego preferencji (w tym reklama kontekstowa);"
+},
+{
+"t": "li",
+"x": "wyświetlaniu Użytkownikowi treści marketingowych odpowiadających jego zainteresowaniom (reklama behawioralna);"
+},
+{
+"t": "li",
+"x": "kierowaniu e-mailowych powiadomień o interesujących ofertach lub treściach, które w niektórych przypadkach zawierają informacje handlowe (usługa newslettera);"
+},
+{
+"t": "li",
+"x": "prowadzeniu innego rodzaju działań związanych z marketingiem bezpośrednim towarów i usług (przesyłanie informacji handlowych drogą elektroniczną oraz działania telemarketingowe),"
+},
+{
+"t": "li",
+"x": "kierowania do Użytkowników reklamy, w tym reklamy kontekstowej (tj. reklamy, która nie jest dopasowana do preferencji Użytkownika)."
+},
+{
+"t": "p",
+"x": "Przetwarzanie danych osobowych w tym celu odbywa się w związku z realizacją prawnie uzasadnionego interesu administratora (art. 6 ust. 1 lit. f) RODO)."
+},
+{
+"t": "p",
+"x": "Fastline przesyła Użytkownikom, którzy w tym celu podali swój adres e-mail, korespondencję w formie newslettera, za pomocą poczty elektronicznej. Podanie danych jest wymagane w celu świadczenia usługi newslettera, a ich niepodanie skutkuje brakiem możliwości jego wysyłki. Dane osobowe są przetwarzane:"
+},
+{
+"t": "li",
+"x": "w celu świadczenia usługi wysyłki newslettera – podstawą prawną przetwarzania jest niezbędność przetwarzania do wykonania umowy (art. 6 ust. 1 lit. b) RODO);"
+},
+{
+"t": "li",
+"x": "w przypadku kierowania do Użytkownika treści marketingowych w ramach newslettera – podstawą prawną przetwarzania, w tym profilowania jest uzasadniony interes Administratora (art. 6 ust. 1 lit. f) RODO), w związku z wyrażoną zgodą na otrzymywanie newslettera;"
+},
+{
+"t": "li",
+"x": "w celach analitycznych i statystycznych – podstawą prawną przetwarzania jest uzasadniony interes Administratora, (art. 6 ust. 1 lit. f) RODO) polegający na prowadzeniu analiz aktywności Użytkowników w Serwisie, w celu doskonalenia stosowanych funkcjonalności;"
+},
+{
+"t": "li",
+"x": "w celu ewentualnego ustalenia, dochodzenia lub obrony przed roszczeniami – podstawą prawną przetwarzania jest uzasadniony interes Administratora (art. 6 ust. 1 lit. f) RODO)."
+},
+{
+"t": "p",
+"x": "Jeżeli Użytkownik wyraził w tym zakresie zgodę, dane osobowe Użytkownika mogą być również wykorzystywane przez Administratora do kierowania do Użytkownika treści marketingowej różnymi kanałami, tj. za pośrednictwem poczty e-mail, drogą MMS/SMS-a lub drogą telefoniczną. Takie działania są podejmowane przez Administratora wyłącznie w przypadku, gdy Użytkownik wyraził w tym zakresie zgodę, którą Użytkownik może wycofać w dowolnym momencie. Wycofanie zgody nie ma wpływu na legalność przetwarzania danych w okresie między wyrażeniem zgody przez Użytkownika, a jej wycofaniem."
+},
+{
+"t": "h",
+"x": "V. PRAWA OSÓB, KTÓRYCH DANE SĄ PRZETWARZANE"
+},
+{
+"t": "p",
+"x": "Użytkownikowi przysługują następujące prawa:"
+},
+{
+"t": "li",
+"x": "do sprostowania danych"
+},
+{
+"t": "li",
+"x": "dostępu do danych"
+},
+{
+"t": "li",
+"x": "do usunięcia danych"
+},
+{
+"t": "li",
+"x": "do ograniczenia przetwarzania;"
+},
+{
+"t": "li",
+"x": "do przenoszenia danych"
+},
+{
+"t": "li",
+"x": "do sprzeciwu wobec przetwarzania danych na podstawie uzasadnionego interesu Administratora lub podmiotu trzeciego, w tym profilowania, z przyczyn związanych ze szczególną sytuacją oraz do sprzeciwu wobec przetwarzania danych w celach marketingu bezpośredniego;"
+},
+{
+"t": "li",
+"x": "do cofnięcia zgody w dowolnym momencie, z zastrzeżeniem, że wycofanie zgody nie ma wpływu na przetwarzanie, które odbywało się do momentu wycofania zgody. Pozostaje w pełni ważne i legalne."
+},
+{
+"t": "li",
+"x": "do złożenia skargi dotyczącej przetwarzania danych osobowych do organu nadzorczego zajmującego się ochroną danych osobowych. W Rzeczpospolitej Polskiej organem nadzorczym jest Prezes Urzędu Ochrony Danych Osobowych."
+},
+{
+"t": "h",
+"x": "VI. PLIKI COOKIE"
+},
+{
+"t": "li",
+"x": "pliki cookie z danymi wprowadzanymi przez Użytkownika;"
+},
+{
+"t": "li",
+"x": "sesyjne pliki cookie odtwarzaczy multimedialnych"
+},
+{
+"t": "li",
+"x": "trwałe pliki cookie służące do personalizacji interfejsu Użytkownika na czas trwania sesji lub nieco dłużej"
+},
+{
+"t": "li",
+"x": "pliki cookie służące do monitorowania ruchu na stronie internetowej, tj. analityki danych"
+},
+{
+"t": "li",
+"x": "Cookie marketingowe, pozwalające na dostarczanie treści reklamowych"
+},
+{
+"t": "li",
+"x": "Wykorzystanie plików cookie oraz zebranych za ich pośrednictwem danych osobowych w celach marketingowych wymaga uzyskania zgody Użytkownika. Zgoda ta może być w każdym momencie wycofana."
+},
+{
+"t": "li",
+"x": "Użytkownik może wycofać zgodę poprzez zmianę ustawień prywatności w przeglądarce bądź aplikacji, z zastrzeżeniem, że zmiana ta może spowodować brak dostępu do niektórych funkcji Serwisu. Zmiana ustawień prywatności możliwa jest poprzez wybranie odpowiedniej opcji w ustawieniach przeglądarki lub aplikacji. Sposób i zakres zmian ustawień prywatności, zależy od rodzaju lub wersji przeglądarki albo aplikacji, z której Użytkownik korzysta."
+},
+{
+"t": "h",
+"x": "VII. PRZEKAZYWANIE DANYCH POZA OBSZAR EOG"
+},
+{
+"t": "p",
+"x": "Dane osobowe Użytkownika mogą być przekazywane poza Europejski Obszar Gospodarczy, na podstawie decyzji Komisji Europejskiej lub pod warunkiem zastosowania odpowiednich zabezpieczeń, które mogą polegać na skorzystaniu z wiążących reguł korporacyjnych, standardowych klauzul ochrony danych przyjętych przez Komisję Europejską, standardowych klauzul ochrony danych przyjętych przez Prezesa Urzędu Ochrony Danych Osobowych lub klauzul umownych dopuszczonych przez Prezesa Urzędu Ochrony Danych Osobowych."
+}
+]
+}

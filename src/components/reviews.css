@@ -1,0 +1,10 @@
+.reviews { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
+.review { padding: 26px; display: flex; flex-direction: column; gap: 14px; }
+.review-helmet { color: var(--red); }
+.review-text { color: #cfcfd6; font-size: 14px; line-height: 1.7; flex: 1; }
+.review-name {
+  font-family: var(--label); font-size: 13px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--gray); border-top: 1px solid var(--line); padding-top: 12px;
+}
+@media (max-width: 1000px) { .reviews { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .reviews { grid-template-columns: 1fr; } }
