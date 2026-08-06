@@ -185,3 +185,5 @@
 /* voucher generator */
 .adm-gen { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
 .adm-gen .field select, .adm-gen .field input { min-width: 170px; }
+
+.adm-order-vactions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }

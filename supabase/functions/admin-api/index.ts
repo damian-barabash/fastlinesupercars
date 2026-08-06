@@ -92,7 +92,16 @@ Deno.serve(async (req) => {
         let q = 'orders?select=*&order=created_at.desc&limit=200'
         if (body.status) q += `&status=eq.${encodeURIComponent(body.status)}`
         if (body.search) q += `&or=(customer_name.ilike.*${encodeURIComponent(body.search)}*,customer_email.ilike.*${encodeURIComponent(body.search)}*)`
-        return J(await db(q))
+        const orders = await db(q)
+        // attach voucher (code, pdf, status) to each paid order
+        const ids = orders.filter((o: { voucher_id?: string }) => o.voucher_id).map((o: { voucher_id: string }) => o.voucher_id)
+        if (ids.length) {
+          const vs = await db(`vouchers?id=in.(${ids.join(',')})&select=id,code,pdf_path,status,valid_until`)
+          const byId: Record<string, unknown> = {}
+          for (const v of vs) byId[v.id] = v
+          for (const o of orders) if (o.voucher_id) o.voucher = byId[o.voucher_id] || null
+        }
+        return J(orders)
       }
 
       case 'vouchers.list': {

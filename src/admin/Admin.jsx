@@ -492,6 +492,12 @@ function Orders() {
     try { await adminApi('orders.delete', { id: o.id }) } catch (e) { alert(e.message) }
   }
 
+  async function openPdf(e, v) {
+    e.stopPropagation()
+    const d = await adminApi('voucherPdfUrl', { path: v.pdf_path })
+    if (d.url) window.open(d.url, '_blank')
+  }
+
   return (
     <div>
       <div className="adm-bar">
@@ -509,7 +515,7 @@ function Orders() {
       {!rows ? <p className="adm-muted">Ładowanie…</p> : (
         <div className="adm-table-wrap adm-card">
           <table className="adm-table">
-            <thead><tr><th>#</th><th>Klient</th><th>Pozycje</th><th>Kwota</th><th>Status</th><th>Data</th><th></th></tr></thead>
+            <thead><tr><th>#</th><th>Klient</th><th>Voucher</th><th>Kwota</th><th>Status</th><th>Data</th><th></th></tr></thead>
             <tbody>
               {rows.map((o) => (
                 <tr key={o.id} onClick={() => setOpen(open === o.id ? null : o.id)} className="adm-row-click">
@@ -524,7 +530,17 @@ function Orders() {
                       </div>
                     )}
                   </td>
-                  <td>{(o.items || []).reduce((s, i) => s + i.qty, 0)}</td>
+                  <td>
+                    {o.voucher ? (
+                      <>
+                        <b className="adm-code" style={{ fontSize: 13 }}>{o.voucher.code}</b>
+                        <div className="adm-order-vactions">
+                          <span className={`adm-badge is-${o.voucher.status}`}>{o.voucher.status}</span>
+                          {o.voucher.pdf_path && <button className="adm-link" onClick={(e) => openPdf(e, o.voucher)}>PDF</button>}
+                        </div>
+                      </>
+                    ) : <span className="adm-muted">—</span>}
+                  </td>
                   <td>{zl(o.total)}</td>
                   <td><span className={`adm-badge is-${o.status}`}>{o.status}</span></td>
                   <td className="adm-muted">{new Date(o.created_at).toLocaleString('pl-PL')}</td>
@@ -547,7 +563,6 @@ function Vouchers() {
   const [status, setStatus] = useState('')
   const [search, setSearch] = useState('')
   const [product, setProduct] = useState('')
-  const [source, setSource] = useState('')
   const [products, setProducts] = useState([])
   const [gen, setGen] = useState({ product_id: '', variant: '', count: 5, prefix: '' })
   const [genBusy, setGenBusy] = useState(false)
@@ -555,11 +570,12 @@ function Vouchers() {
 
   useEffect(() => { adminApi('products.list').then(setProducts).catch(() => {}) }, [])
 
-  const load = () => adminApi('vouchers.list', { status, search, product, source }).then(setRows).catch(() => {})
+  // only imported/generated codes here — vouchers from shop purchases live with their orders
+  const load = () => adminApi('vouchers.list', { status, search, product, source: 'import' }).then(setRows).catch(() => {})
   useEffect(() => {
     const t = setTimeout(load, 250)
     return () => clearTimeout(t)
-  }, [status, search, product, source])
+  }, [status, search, product])
 
   const genProduct = products.find((p) => p.id === gen.product_id)
 
@@ -588,7 +604,10 @@ function Vouchers() {
   return (
     <div>
       <div className="adm-bar">
-        <h2 className="adm-h">Vouchery</h2>
+        <div>
+          <h2 className="adm-h">Vouchery</h2>
+          <p className="adm-muted">Kody z importu i wygenerowane. Vouchery z zakupów znajdziesz przy zamówieniach.</p>
+        </div>
         <div className="adm-filters">
           <input placeholder="Szukaj: kod / odbiorca…" value={search} onChange={(e) => setSearch(e.target.value)} />
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -601,11 +620,6 @@ function Vouchers() {
           <select value={product} onChange={(e) => setProduct(e.target.value)}>
             <option value="">Produkt: wszystkie</option>
             {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <select value={source} onChange={(e) => setSource(e.target.value)}>
-            <option value="">Źródło: wszystkie</option>
-            <option value="shop">Sklep (zakupy)</option>
-            <option value="import">Import / wygenerowane</option>
           </select>
           <button className="btn btn-red" onClick={() => setGenOpen(!genOpen)}>{genOpen ? 'Zamknij' : '+ Dodaj kody'}</button>
         </div>
