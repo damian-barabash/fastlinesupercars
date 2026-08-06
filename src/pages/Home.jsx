@@ -17,14 +17,14 @@ const BEN_ICONS = [
 ]
 
 const GALLERY = [
-  '/img/2021_04_r5c_4716-scaled.webp',
-  '/img/2021_04_porschefs1-min-scaled.webp',
-  '/img/2021_04_suprafs1-min-scaled.webp',
-  '/img/2021_04_alpineredfs1-min-scaled.webp',
-  '/img/2021_04_merolfs1-min-scaled.webp',
-  '/img/2023_04_japonskifs2-min-scaled.webp',
-  '/img/2023_04_niemieckifs2-min-scaled.webp',
-  '/img/2021_04_yarisfs1-min-scaled.webp',
+  '/img/gal-1.webp',
+  '/img/gal-2.webp',
+  '/img/gal-3.webp',
+  '/img/gal-4.webp',
+  '/img/gal-5.webp',
+  '/img/gal-6.webp',
+  '/img/gal-7.webp',
+  '/img/gal-8.webp',
 ]
 
 export default function Home() {

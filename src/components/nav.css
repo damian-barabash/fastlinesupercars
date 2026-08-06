@@ -79,4 +79,9 @@
   .nav-drop-menu { position: static; opacity: 1; visibility: visible; transform: none; background: none; border: none; align-items: center; gap: 2px; display: none; box-shadow: none; }
   .nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu { display: flex; }
   .nav-cta-mobile { display: flex; gap: 12px; margin-top: 16px; }
+  .nav-links .nav-cta-mobile a {
+    font-family: var(--label); font-size: 13px; font-weight: 700; font-style: italic;
+    letter-spacing: .1em; padding: 14px 28px; color: #fff;
+  }
+  .nav-links .nav-cta-mobile a::after { display: none; }
 }

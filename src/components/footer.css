@@ -1,7 +1,7 @@
 .footer { color: #d5d5da; }
 .footer-in {
   display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 40px;
-  padding-top: 60px; padding-bottom: 44px;
+  padding-top: 96px; padding-bottom: 56px;
 }
 .footer-col { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
 .footer-col a { color: #b9b9c0; transition: color .15s ease; width: fit-content; }

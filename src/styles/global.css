@@ -15,13 +15,6 @@
   --body: 'Poppins', sans-serif;
   --shadow: 0 2px 14px rgba(0, 0, 0, .12);
   --shadow-lg: 0 14px 40px rgba(0, 0, 0, .16);
-  --carbon:
-    linear-gradient(27deg, #151519 5px, transparent 5px) 0 5px,
-    linear-gradient(207deg, #151519 5px, transparent 5px) 10px 0,
-    linear-gradient(27deg, #1c1c21 5px, transparent 5px) 0 10px,
-    linear-gradient(207deg, #1c1c21 5px, transparent 5px) 10px 5px,
-    linear-gradient(90deg, #17171b 10px, transparent 10px),
-    linear-gradient(#101013 25%, #131317 25%, #131317 50%, transparent 50%, transparent 75%, #141418 75%, #141418);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -92,12 +85,16 @@ h1, h2, h3, h4, .display {
 }
 .card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
 
-/* dark band helper (carbon texture) */
+/* dark band helper — real carbon-fiber photo texture */
 .carbon {
-  background: var(--carbon);
-  background-size: 20px 20px;
+  background:
+    linear-gradient(rgba(9, 9, 12, .82), rgba(9, 9, 12, .82)),
+    url('/img/carbon-tex.webp') center / cover no-repeat fixed;
   background-color: var(--dark);
   color: #fff;
+}
+@media (max-width: 900px) {
+  .carbon { background-attachment: scroll; } /* fixed bg janky on mobile */
 }
 
 /* inputs */

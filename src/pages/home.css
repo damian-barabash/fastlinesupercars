@@ -5,19 +5,28 @@
 .hero-ctas { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10%; }
 .hero-btn { font-size: 15px; padding: 15px 36px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
 @media (max-width: 720px) {
-  .hero-ctas { margin-bottom: 6%; }
-  .hero-btn { font-size: 12px; padding: 11px 20px; }
+  /* full banner visible on mobile — the 10% promo info must not be cropped */
+  .hero-img { min-height: 0; height: auto; object-fit: contain; }
+  .hero-overlay { position: static; }
+  .hero-ctas { margin: 16px 0 20px; justify-content: center; width: 100%; }
+  .hero-btn { font-size: 12.5px; padding: 12px 22px; }
 }
 
 /* BENEFITS — dark carbon band */
-.benefits-sec { padding: 40px 0; }
+.benefits-sec { padding: 56px 0; }
 .benefits { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; }
 .benefit { display: flex; gap: 16px; align-items: center; }
 .benefit-icon { width: 62px; height: 48px; object-fit: contain; }
 .benefit-title { font-size: 19px; color: #fff; font-style: italic; }
 .benefit-text { color: #a7a7af; font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; font-family: var(--label); font-weight: 600; }
-@media (max-width: 980px) { .benefits { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 540px) { .benefits { grid-template-columns: 1fr; } }
+@media (max-width: 980px) { .benefits { grid-template-columns: 1fr 1fr; gap: 20px; } }
+@media (max-width: 540px) {
+  .benefits { grid-template-columns: 1fr 1fr; gap: 16px 12px; }
+  .benefit { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .benefit-icon { width: 46px; height: 36px; }
+  .benefit-title { font-size: 16px; }
+  .benefit-text { font-size: 10px; }
+}
 
 /* FLEET */
 .fleet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 48px; }
@@ -28,7 +37,7 @@
 .vban { position: relative; overflow: hidden; background: #0c0c0e; }
 .vban-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; }
 .vban::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,5,7,.88) 0%, rgba(5,5,7,.55) 55%, rgba(5,5,7,.25) 100%); z-index: 1; }
-.vban-in { position: relative; z-index: 2; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; padding-top: 76px; padding-bottom: 76px; }
+.vban-in { position: relative; z-index: 2; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; padding-top: 120px; padding-bottom: 120px; }
 .vban-copy { color: #fff; }
 .vban-label { color: #cfcfd6; }
 .vban-text { color: rgba(255,255,255,.88); font-size: 17px; margin-top: 14px; max-width: 460px; }
@@ -49,7 +58,7 @@
 /* ABOUT — panorama band with white card */
 .about-band { position: relative; overflow: hidden; background: #0c0c0e; }
 .about-band-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .8; }
-.about-band-in { position: relative; z-index: 2; padding-block: 84px; display: flex; }
+.about-band-in { position: relative; z-index: 2; padding-block: 110px; display: flex; }
 .about-card {
   background: rgba(255,255,255,.96); max-width: 560px; padding: 42px 46px;
   clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%);
@@ -84,7 +93,7 @@
 @media (max-width: 900px) { .faq-grid { grid-template-columns: 1fr; gap: 32px; } }
 
 /* REVIEWS — dark photo band */
-.rev-sec { position: relative; overflow: hidden; background: #0c0c0e; padding: 84px 0; }
+.rev-sec { position: relative; overflow: hidden; background: #0c0c0e; padding: 120px 0; }
 .rev-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .5; }
 .rev-sec::before { content: ''; position: absolute; inset: 0; background: rgba(6,6,8,.55); z-index: 1; }
 .rev-in { position: relative; z-index: 2; }
