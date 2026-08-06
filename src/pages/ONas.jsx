@@ -26,11 +26,11 @@ export default function ONas() {
         </div>
       </section>
 
-      <section className="onas-fra">
-        <div className="kerb" />
+      <section className="onas-fra carbon">
+        
         <div className="wrap onas-fra-in">
           <Reveal className="onas-fra-img">
-            <img src="/img/2023_03_mariusz.webp" alt="Mariusz Miękoś — Fastline Racing Academy" loading="lazy" />
+            <img src="/img/2023_03_mariusz_300x300.webp" alt="Mariusz Miękoś — Fastline Racing Academy" loading="lazy" />
           </Reveal>
           <Reveal delay={0.1}>
             <span className="r-label" style={{ color: 'rgba(255,255,255,.7)' }}>Szkolenia</span>
@@ -41,7 +41,7 @@ export default function ONas() {
             </a>
           </Reveal>
         </div>
-        <div className="kerb" />
+        
       </section>
 
       <ContactSection />

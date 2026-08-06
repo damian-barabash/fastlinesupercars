@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ContentProvider } from './lib/content.jsx'
+import { startSmooth, stopSmooth, scrollTop } from './lib/smooth.js'
 import Nav from './components/Nav.jsx'
 import Footer from './components/Footer.jsx'
 import SpeedFx from './components/SpeedFx.jsx'
@@ -21,13 +22,18 @@ const Admin = lazy(() => import('./admin/Admin.jsx'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
-  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  useEffect(() => { scrollTop() }, [pathname])
   return null
 }
 
 export default function App() {
   const { pathname } = useLocation()
   const isAdmin = pathname.startsWith('/admin')
+
+  useEffect(() => {
+    if (isAdmin) stopSmooth()
+    else startSmooth()
+  }, [isAdmin])
 
   if (isAdmin) {
     return (

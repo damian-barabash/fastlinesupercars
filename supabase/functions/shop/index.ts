@@ -160,7 +160,14 @@ const mailShell = (inner: string) => `
 // ---------- actions ----------
 type Item = { product_id: string; variant?: string; qty?: number }
 
-async function createOrder(body: { customer: { name: string; email: string; phone?: string }; gift_for?: string; items: Item[] }) {
+async function getPromo() {
+  const rows = await db(`settings?key=in.(promo_code,promo_percent,promo_min_grosze)&select=key,value`)
+  const m: Record<string, string> = {}
+  for (const r of rows || []) m[r.key] = r.value
+  return { code: (m.promo_code || '').trim(), percent: +(m.promo_percent || 0), min: +(m.promo_min_grosze || 0) }
+}
+
+async function createOrder(body: { customer: { name: string; email: string; phone?: string }; gift_for?: string; items: Item[]; promo?: string }) {
   const { customer, items } = body
   if (!customer?.name || !customer?.email || !/.+@.+\..+/.test(customer.email)) return J({ error: 'Nieprawidłowe dane klienta' }, 400)
   if (!Array.isArray(items) || !items.length) return J({ error: 'Pusty koszyk' }, 400)
@@ -178,16 +185,44 @@ async function createOrder(body: { customer: { name: string; email: string; phon
     }
     lines.push({ product_id: p.id, name: p.name, variant, price, qty })
   }
-  const total = lines.reduce((s, l) => s + l.price * l.qty, 0)
+  const subtotal = lines.reduce((s, l) => s + l.price * l.qty, 0)
+
+  // promo code (e.g. FAST = -10% for orders >= 500 zł)
+  let discount = 0, promoUsed = ''
+  if (body.promo) {
+    const promo = await getPromo()
+    if (promo.code && body.promo.trim().toUpperCase() === promo.code.toUpperCase() && promo.percent > 0) {
+      if (subtotal >= promo.min) {
+        discount = Math.round(subtotal * promo.percent / 100)
+        promoUsed = promo.code.toUpperCase()
+      } else {
+        return J({ error: `Kod ${promo.code} działa od ${(promo.min / 100).toFixed(0)} zł` }, 400)
+      }
+    } else {
+      return J({ error: 'Nieprawidłowy kod rabatowy' }, 400)
+    }
+  }
+  const total = subtotal - discount
+
   const [order] = await db('orders', {
     method: 'POST',
     body: JSON.stringify({
       customer_name: customer.name.trim(), customer_email: customer.email.trim(),
       customer_phone: (customer.phone || '').trim(), gift_for: (body.gift_for || '').trim(),
       items: lines, total, status: 'pending',
+      notes: promoUsed ? `promo:${promoUsed} -${(discount / 100).toFixed(2)} zł` : '',
     }),
   })
-  return J({ order_id: order.id, number: order.number, total })
+  return J({ order_id: order.id, number: order.number, total, subtotal, discount, promo: promoUsed })
+}
+
+async function checkPromo(body: { promo: string; subtotal: number }) {
+  const promo = await getPromo()
+  if (!promo.code || (body.promo || '').trim().toUpperCase() !== promo.code.toUpperCase())
+    return J({ valid: false, error: 'Nieprawidłowy kod rabatowy' })
+  if ((body.subtotal || 0) < promo.min)
+    return J({ valid: false, error: `Kod ${promo.code} działa przy zakupach od ${(promo.min / 100).toFixed(0)} zł` })
+  return J({ valid: true, percent: promo.percent, discount: Math.round((body.subtotal || 0) * promo.percent / 100) })
 }
 
 async function pay(body: { order_id: string }) {
@@ -289,6 +324,7 @@ Deno.serve(async (req) => {
   try {
     const { action, ...body } = await req.json()
     if (action === 'createOrder') return await createOrder(body)
+    if (action === 'checkPromo') return await checkPromo(body)
     if (action === 'pay') return await pay(body)
     if (action === 'order') return await getOrder(body)
     if (action === 'contact') return await contact(body)

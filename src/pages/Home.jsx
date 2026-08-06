@@ -1,6 +1,4 @@
 import { Link } from 'react-router-dom'
-import { motion, useScroll, useTransform } from 'framer-motion'
-import { useRef } from 'react'
 import { T } from '../lib/content.jsx'
 import { useProducts } from '../lib/products.js'
 import { addToCart } from '../lib/cart.js'
@@ -18,65 +16,37 @@ const BEN_ICONS = [
   '/img/2025_05_ikona-wymiana-2.svg',
 ]
 
+const GALLERY = [
+  '/img/2021_04_r5c_4716-scaled.webp',
+  '/img/2021_04_porschefs1-min-scaled.webp',
+  '/img/2021_04_suprafs1-min-scaled.webp',
+  '/img/2021_04_alpineredfs1-min-scaled.webp',
+  '/img/2021_04_merolfs1-min-scaled.webp',
+  '/img/2023_04_japonskifs2-min-scaled.webp',
+  '/img/2023_04_niemieckifs2-min-scaled.webp',
+  '/img/2021_04_yarisfs1-min-scaled.webp',
+]
+
 export default function Home() {
   const products = useProducts()
   const cars = products.filter((p) => p.id !== 'voucher')
   const voucher = products.find((p) => p.id === 'voucher')
-  const heroRef = useRef(null)
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
-  const carY = useTransform(scrollYProgress, [0, 1], ['0%', '18%'])
-  const bgY = useTransform(scrollYProgress, [0, 1], ['0%', '32%'])
 
   return (
     <main>
-      {/* HERO */}
-      <section className="hero" ref={heroRef}>
-        <motion.div className="hero-bg" style={{ y: bgY }} aria-hidden />
-        <div className="hero-grid-lines" aria-hidden />
-        <div className="wrap hero-in">
-          <motion.div
-            className="hero-copy"
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <span className="hero-kicker"><T k="hero.kicker" /></span>
-            <h1 className="hero-title">
-              <T k="hero.title1" as="span" />
-              <em><T k="hero.title2" as="span" /></em>
-            </h1>
-            <p className="hero-lead"><T k="hero.lead" /></p>
-            <div className="hero-ctas">
-              <Link to="/oferta" className="btn btn-red"><T k="hero.cta1" /></Link>
-              <Link to="/produkt/voucher" className="btn btn-ghost"><T k="hero.cta2" /></Link>
-            </div>
-          </motion.div>
-          <motion.div
-            className="hero-car"
-            style={{ y: carY }}
-            initial={{ opacity: 0, x: 80 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <img src="/img/2023_04_g-6.webp" alt="Porsche 911 4 GTS" fetchpriority="high" />
-          </motion.div>
+      {/* HERO — original Maserati banner with FAST -10% promo */}
+      <section className="hero">
+        <img src="/img/hero-banner-maserati.webp" alt="Zarezerwuj swoją przejażdżkę marzeń — Maserati MC20 na torze. 10% zniżki z kodem FAST na zakupy powyżej 500 zł" className="hero-img" fetchPriority="high" />
+        <div className="hero-overlay wrap">
+          <div className="hero-ctas">
+            <Link to="/oferta" className="btn btn-red hero-btn">Wybierz auto&nbsp;&nbsp;»</Link>
+            <Link to="/produkt/voucher" className="btn btn-white hero-btn">Kup voucher</Link>
+          </div>
         </div>
-        <div className="hero-kerb kerb" />
       </section>
 
-      {/* MARQUEE */}
-      <div className="marquee" aria-hidden>
-        <div className="marquee-inner">
-          {[0, 1].map((n) => (
-            <span key={n}>
-              PORSCHE 911 4 GTS <b>●</b> TOYOTA GR SUPRA <b>●</b> ALPINE A110 <b>●</b> BMW M2 <b>●</b> MERCEDES A45S AMG <b>●</b> FORD FOCUS RS <b>●</b> TOYOTA GR YARIS <b>●</b> PAKIET NIEMIECKI <b>●</b> PAKIET JAPOŃSKI <b>●</b>&nbsp;
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* BENEFITS */}
-      <section className="section benefits-sec">
+      {/* BENEFITS — dark carbon band like original */}
+      <section className="benefits-sec carbon">
         <div className="wrap">
           <Stagger className="benefits">
             {[1, 2, 3, 4].map((i) => (
@@ -92,12 +62,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FLEET */}
+      {/* FLEET — white section */}
       <section className="section" id="oferta">
         <div className="wrap">
-          <Reveal>
-            <span className="r-label"><T k="fleet.label" /></span>
-            <h2 className="h-lg" style={{ marginTop: 14, maxWidth: 700 }}><T k="fleet.title" /></h2>
+          <Reveal className="tac">
+            <span className="r-label" style={{ justifyContent: 'center' }}><T k="fleet.label" /></span>
+            <h2 className="h-lg" style={{ marginTop: 14 }}><T k="fleet.title" /></h2>
           </Reveal>
           <Stagger className="fleet-grid">
             {cars.map((p) => <Item key={p.id}><CarCard p={p} /></Item>)}
@@ -105,39 +75,41 @@ export default function Home() {
         </div>
       </section>
 
-      {/* VOUCHER BANNER */}
+      {/* VOUCHER — dark photo band (marshal with checkered flag) */}
       {voucher && (
         <section className="vban">
-          <div className="kerb" />
+          <img src="/img/voucher-tlo.webp" alt="" className="vban-bg" loading="lazy" />
           <div className="wrap vban-in">
             <Reveal className="vban-copy">
-              <span className="r-label" style={{ color: 'rgba(255,255,255,.75)' }}><T k="vban.label" /></span>
+              <span className="r-label vban-label"><T k="vban.label" /></span>
               <h2 className="h-lg" style={{ marginTop: 12 }}><T k="vban.title" /></h2>
               <p className="vban-text"><T k="vban.text" /></p>
               <div className="vban-ctas">
                 <button
-                  className="btn btn-white"
+                  className="btn btn-red"
                   onClick={() => { addToCart({ product_id: 'voucher', variant: '', name: voucher.name }) }}
                 ><T k="vban.cta" /></button>
-                <Link to="/produkt/voucher" className="btn btn-ghost">Szczegóły</Link>
+                <Link to="/produkt/voucher" className="btn btn-white">Szczegóły</Link>
               </div>
             </Reveal>
             <Reveal delay={0.15} className="vban-img">
-              <img src={voucher.cover} alt="Voucher podarunkowy" loading="lazy" />
+              <img src="/img/voucher-karta.webp" alt="Voucher Fastline Supercars" loading="lazy" />
             </Reveal>
           </div>
-          <div className="kerb" />
         </section>
       )}
 
-      {/* 3 STEPS */}
-      <section className="section">
+      {/* 3 STEPS — original road graphic */}
+      <section className="section steps-sec">
         <div className="wrap">
-          <Reveal><h2 className="h-lg tac"><T k="steps.title" /></h2></Reveal>
+          <Reveal className="tac"><h2 className="h-lg"><T k="steps.title" /></h2></Reveal>
+          <Reveal delay={0.1}>
+            <img src="/img/kroki-mapa.webp" alt="1. Wybierz auto, pojedynek lub szkolenie. 2. Wybierz termin, opłać zlecenie. 3. Spełniasz marzenia!" className="steps-map" loading="lazy" />
+          </Reveal>
           <Stagger className="steps">
             {[1, 2, 3].map((i) => (
-              <Item key={i} className="step carbon">
-                <div className="ghost-num step-num">{i}</div>
+              <Item key={i} className="step">
+                <div className="step-num">{String(i).padStart(2, '0')}</div>
                 <h3 className="h-md"><T k={`steps.${i}.title`} /></h3>
                 <p className="muted"><T k={`steps.${i}.text`} /></p>
               </Item>
@@ -146,28 +118,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ABOUT */}
-      <section className="section about-sec">
-        <div className="wrap about-grid">
-          <Reveal className="about-img">
-            <img src="/img/2024_05_new-project-38.webp" alt="Fastline Supercars na torze" loading="lazy" />
-            <div className="about-img-frame" aria-hidden />
-          </Reveal>
-          <Reveal delay={0.12}>
+      {/* ABOUT — panorama band */}
+      <section className="about-band">
+        <img src="/img/flota-panorama.webp" alt="" className="about-band-bg" loading="lazy" />
+        <div className="wrap about-band-in">
+          <Reveal className="about-card">
             <span className="r-label"><T k="about.label" /></span>
-            <h2 className="h-lg" style={{ marginTop: 14 }}><T k="about.title" /></h2>
+            <h2 className="h-lg" style={{ marginTop: 12 }}><T k="about.title" /></h2>
             <div className="about-copy">
               <T k="about.p1" as="p" />
               <T k="about.p2" as="p" />
               <T k="about.p3" as="p" />
               <T k="about.p4" as="p" className="about-strong" />
             </div>
-            <Link to="/o-nas" className="btn btn-ghost" style={{ marginTop: 26 }}>Poznaj nas</Link>
+            <Link to="/o-nas" className="btn btn-red" style={{ marginTop: 24 }}>Poznaj nas&nbsp;&nbsp;»</Link>
           </Reveal>
         </div>
       </section>
 
-      {/* STATS */}
+      {/* STATS — white strip */}
       <section className="stats-sec">
         <div className="wrap">
           <Stagger className="stats">
@@ -181,8 +150,25 @@ export default function Home() {
         </div>
       </section>
 
+      {/* GALLERY — action photos mosaic */}
+      <section className="section gal-sec" style={{ paddingTop: 0 }}>
+        <div className="wrap">
+          <Reveal className="tac">
+            <span className="r-label" style={{ justifyContent: 'center' }}>Galeria</span>
+            <h2 className="h-lg" style={{ marginTop: 14, marginBottom: 40 }}>Nasze auta w akcji</h2>
+          </Reveal>
+          <Stagger className="gal-grid">
+            {GALLERY.map((src, i) => (
+              <Item key={src} className={`gal-item ${i === 0 || i === 5 ? 'gal-wide' : ''}`}>
+                <img src={src} alt="Fastline Supercars na torze" loading="lazy" />
+              </Item>
+            ))}
+          </Stagger>
+        </div>
+      </section>
+
       {/* FAQ */}
-      <section className="section">
+      <section className="section faq-sec">
         <div className="wrap faq-grid">
           <Reveal>
             <span className="r-label">FAQ</span>
@@ -192,12 +178,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* REVIEWS */}
-      <section className="section" style={{ paddingTop: 0 }}>
-        <div className="wrap">
-          <Reveal>
-            <span className="r-label">Opinie</span>
-            <h2 className="h-lg" style={{ marginTop: 14, marginBottom: 42 }}><T k="rev.title" /></h2>
+      {/* REVIEWS — dark photo band */}
+      <section className="rev-sec">
+        <img src="/img/opinie-tlo.webp" alt="" className="rev-bg" loading="lazy" />
+        <div className="wrap rev-in">
+          <Reveal className="tac">
+            <span className="r-label rev-label" style={{ justifyContent: 'center' }}>Opinie</span>
+            <h2 className="h-lg" style={{ marginTop: 14, marginBottom: 42, color: '#fff' }}><T k="rev.title" /></h2>
           </Reveal>
           <Reviews />
         </div>

@@ -30,8 +30,7 @@ export default function Oferta() {
         </div>
       </section>
 
-      <section className="oferta-gain">
-        <div className="kerb" />
+      <section className="oferta-gain carbon">
         <div className="wrap oferta-gain-in">
           <Reveal>
             <h2 className="h-lg"><T k="of.gain.title" /></h2>
@@ -45,7 +44,6 @@ export default function Oferta() {
             ))}
           </Stagger>
         </div>
-        <div className="kerb" />
       </section>
 
       <ContactSection />

@@ -1,10 +1,10 @@
 .carcard { display: flex; flex-direction: column; }
-.carcard-img { position: relative; aspect-ratio: 1/0.82; overflow: hidden; background: #0e0e11; }
+.carcard-img { position: relative; aspect-ratio: 1/1; overflow: hidden; background: #f0f0f3; }
 .carcard-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.22,1,.36,1); }
-.carcard:hover .carcard-img img { transform: scale(1.06); }
+.carcard:hover .carcard-img img { transform: scale(1.04); }
 .carcard-shine {
   position: absolute; inset: 0;
-  background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.14) 50%, transparent 60%);
+  background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.22) 50%, transparent 60%);
   transform: translateX(-120%); transition: transform .7s ease;
 }
 .carcard:hover .carcard-shine { transform: translateX(120%); }
@@ -14,7 +14,7 @@
 .carcard-specs li { color: var(--gray); font-size: 13.5px; padding-left: 16px; position: relative; }
 .carcard-specs li::before { content: ''; position: absolute; left: 0; top: 8px; width: 7px; height: 2px; background: var(--red); }
 .carcard-foot { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; }
-.carcard-price { font-family: var(--display); font-size: 22px; font-weight: 600; color: #fff; }
+.carcard-price { font-family: var(--display); font-size: 22px; color: var(--ink); }
 .carcard-price i { font-style: normal; font-size: 12px; color: var(--gray); letter-spacing: .2em; margin-right: 4px; }
-.carcard-go { font-family: var(--label); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--gray-dark); transition: color .15s ease, transform .15s ease; }
-.carcard:hover .carcard-go { color: var(--red-hot); transform: translateX(4px); }
+.carcard-go { font-family: var(--label); font-weight: 700; font-style: italic; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--gray-light); transition: color .15s ease, transform .15s ease; }
+.carcard:hover .carcard-go { color: var(--red); transform: translateX(4px); }

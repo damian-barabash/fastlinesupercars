@@ -770,43 +770,19 @@
  {
   "id": "voucher",
   "name": "Voucher",
-  "subtitle": "Siła, moc oraz solidna dawka adrenaliny",
+  "subtitle": "Obdarowany sam zdecyduje, który produkt będzie jego prezentem!",
   "category": [
    "voucher"
   ],
   "short_specs": [],
-  "full_specs": [
-   {
-    "label": "Pojemność silnika",
-    "value": "22"
-   },
-   {
-    "label": "Moc silnika",
-    "value": "22"
-   },
-   {
-    "label": "Skrzynia biegów",
-    "value": "2"
-   },
-   {
-    "label": "Napęd",
-    "value": "2"
-   },
-   {
-    "label": "Przyśpieszenie",
-    "value": "2"
-   },
-   {
-    "label": "Prędkość max.",
-    "value": "2"
-   }
-  ],
+  "full_specs": [],
   "description": "",
   "long_description": "",
   "images": [
-   "/img/2024_06_image-13.webp"
+   "/img/voucher-karta.webp",
+   "/img/voucher-tlo.webp"
   ],
-  "cover": "/img/2024_06_image-13.webp",
+  "cover": "/img/voucher-karta-sq.webp",
   "price_from": 89900,
   "variants": [],
   "voucher_template": "templates/Alpine A110.jpg",

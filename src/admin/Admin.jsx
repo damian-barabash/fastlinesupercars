@@ -71,7 +71,14 @@ function Login({ onOk }) {
 
 function Stats() {
   const [s, setS] = useState(null)
-  useEffect(() => { adminApi('stats').then(setS).catch(() => {}) }, [])
+  const [promo, setPromo] = useState(null)
+  const [saving, setSaving] = useState(false)
+  useEffect(() => {
+    adminApi('stats').then(setS).catch(() => {})
+    adminApi('settings.get').then((m) => setPromo({
+      code: m.promo_code || '', percent: m.promo_percent || '10', min: String((+(m.promo_min_grosze || 0)) / 100),
+    })).catch(() => {})
+  }, [])
   if (!s) return <p className="adm-muted">Ładowanie…</p>
   const items = [
     { label: 'Zamówienia', value: s.orders_total },
@@ -80,14 +87,34 @@ function Stats() {
     { label: 'Vouchery aktywne', value: s.vouchers_active },
     { label: 'Vouchery użyte', value: s.vouchers_used },
   ]
+  async function savePromo() {
+    setSaving(true)
+    try {
+      await adminApi('settings.set', { data: { promo_code: promo.code.trim().toUpperCase(), promo_percent: promo.percent, promo_min_grosze: String(Math.round(+promo.min * 100) || 0) } })
+    } catch (e) { alert(e.message) }
+    setSaving(false)
+  }
   return (
-    <div className="adm-stats">
-      {items.map((i) => (
-        <div key={i.label} className="adm-stat carbon">
-          <div className="adm-stat-val">{i.value}</div>
-          <div className="adm-stat-label">{i.label}</div>
+    <div>
+      <div className="adm-stats">
+        {items.map((i) => (
+          <div key={i.label} className="adm-stat carbon">
+            <div className="adm-stat-val">{i.value}</div>
+            <div className="adm-stat-label">{i.label}</div>
+          </div>
+        ))}
+      </div>
+      {promo && (
+        <div className="adm-promo carbon">
+          <h3>Kod rabatowy (baner na stronie głównej)</h3>
+          <div className="adm-promo-grid">
+            <div className="field"><label>Kod</label><input value={promo.code} onChange={(e) => setPromo({ ...promo, code: e.target.value })} /></div>
+            <div className="field"><label>Rabat %</label><input type="number" value={promo.percent} onChange={(e) => setPromo({ ...promo, percent: e.target.value })} /></div>
+            <div className="field"><label>Min. zakupy (zł)</label><input type="number" value={promo.min} onChange={(e) => setPromo({ ...promo, min: e.target.value })} /></div>
+            <button className="btn btn-red" disabled={saving} onClick={savePromo}>{saving ? 'Zapisywanie…' : 'Zapisz'}</button>
+          </div>
         </div>
-      ))}
+      )}
     </div>
   )
 }
@@ -319,12 +346,33 @@ function Vouchers() {
   const [rows, setRows] = useState(null)
   const [status, setStatus] = useState('')
   const [search, setSearch] = useState('')
+  const [product, setProduct] = useState('')
+  const [source, setSource] = useState('')
+  const [products, setProducts] = useState([])
+  const [gen, setGen] = useState({ product_id: '', variant: '', count: 5, prefix: '' })
+  const [genBusy, setGenBusy] = useState(false)
+  const [genOpen, setGenOpen] = useState(false)
 
-  const load = () => adminApi('vouchers.list', { status, search }).then(setRows).catch(() => {})
+  useEffect(() => { adminApi('products.list').then(setProducts).catch(() => {}) }, [])
+
+  const load = () => adminApi('vouchers.list', { status, search, product, source }).then(setRows).catch(() => {})
   useEffect(() => {
     const t = setTimeout(load, 250)
     return () => clearTimeout(t)
-  }, [status, search])
+  }, [status, search, product, source])
+
+  const genProduct = products.find((p) => p.id === gen.product_id)
+
+  async function generate() {
+    if (!gen.product_id) return alert('Wybierz produkt')
+    setGenBusy(true)
+    try {
+      const d = await adminApi('vouchers.generate', gen)
+      alert(`Wygenerowano ${d.codes.length} kodów:\n\n${d.codes.join('\n')}`)
+      load()
+    } catch (e) { alert(e.message) }
+    setGenBusy(false)
+  }
 
   async function setVoucherStatus(v, s) {
     setRows((r) => r.map((x) => (x.id === v.id ? { ...x, status: s } : x)))
@@ -343,14 +391,45 @@ function Vouchers() {
         <div className="adm-filters">
           <input placeholder="Szukaj: kod / odbiorca…" value={search} onChange={(e) => setSearch(e.target.value)} />
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Wszystkie</option>
+            <option value="">Status: wszystkie</option>
             <option value="active">Aktywne</option>
             <option value="used">Użyte</option>
             <option value="expired">Wygasłe</option>
             <option value="cancelled">Anulowane</option>
           </select>
+          <select value={product} onChange={(e) => setProduct(e.target.value)}>
+            <option value="">Produkt: wszystkie</option>
+            {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <select value={source} onChange={(e) => setSource(e.target.value)}>
+            <option value="">Źródło: wszystkie</option>
+            <option value="shop">Sklep (zakupy)</option>
+            <option value="import">Import / wygenerowane</option>
+          </select>
         </div>
+        <button className="btn btn-red" onClick={() => setGenOpen(!genOpen)}>{genOpen ? 'Zamknij' : '+ Dodaj kody'}</button>
       </div>
+      {genOpen && (
+        <div className="adm-gen carbon">
+          <div className="field">
+            <label>Produkt</label>
+            <select value={gen.product_id} onChange={(e) => setGen({ ...gen, product_id: e.target.value, variant: '' })}>
+              <option value="">— wybierz —</option>
+              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>Wariant</label>
+            <select value={gen.variant} onChange={(e) => setGen({ ...gen, variant: e.target.value })}>
+              <option value="">— bez wariantu —</option>
+              {(genProduct?.variants || []).map((v) => <option key={v.laps} value={v.laps}>{v.laps}</option>)}
+            </select>
+          </div>
+          <div className="field"><label>Ilość</label><input type="number" min="1" max="100" value={gen.count} onChange={(e) => setGen({ ...gen, count: +e.target.value })} /></div>
+          <div className="field"><label>Prefiks (opcjonalnie)</label><input value={gen.prefix} placeholder="auto" onChange={(e) => setGen({ ...gen, prefix: e.target.value })} /></div>
+          <button className="btn btn-red" disabled={genBusy} onClick={generate}>{genBusy ? 'Generowanie…' : 'Generuj'}</button>
+        </div>
+      )}
       {!rows ? <p className="adm-muted">Ładowanie…</p> : (
         <div className="adm-table-wrap">
           <table className="adm-table">

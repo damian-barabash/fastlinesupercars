@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getCart, updateQty, removeFromCart, clearCart, cartTotal } from '../lib/cart.js'
 import { useProducts, productPrice } from '../lib/products.js'
-import { zl } from '../lib/api.js'
+import { shop, zl } from '../lib/api.js'
 import { Reveal } from '../components/Reveal.jsx'
 import './koszyk.css'
 
@@ -15,6 +15,9 @@ export default function Koszyk() {
   const [step, setStep] = useState(0)
   const [form, setForm] = useState({ name: '', email: '', phone: '', gift_for: '', gift: false, terms: false })
   const [err, setErr] = useState('')
+  const [promo, setPromo] = useState('')
+  const [promoState, setPromoState] = useState(null) // {discount, percent} | {error}
+  const [promoBusy, setPromoBusy] = useState(false)
 
   useEffect(() => {
     const fn = () => setItems(getCart())
@@ -41,12 +44,28 @@ export default function Koszyk() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  async function applyPromo() {
+    if (!promo.trim()) return
+    setPromoBusy(true)
+    try {
+      const d = await shop('checkPromo', { promo: promo.trim(), subtotal: total })
+      setPromoState(d.valid ? { discount: d.discount, percent: d.percent } : { error: d.error })
+    } catch (e) {
+      setPromoState({ error: e.message })
+    }
+    setPromoBusy(false)
+  }
+
+  const discount = promoState?.discount || 0
+  const grandTotal = total - discount
+
   // Optimistic payment: navigate to /dziekujemy immediately; order+pay run there in background
   function payNow() {
     const payload = {
       customer: { name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim() },
       gift_for: form.gift ? form.gift_for.trim() : '',
       items: items.map((i) => ({ product_id: i.product_id, variant: i.variant, qty: i.qty })),
+      ...(promoState?.discount ? { promo: promo.trim() } : {}),
     }
     sessionStorage.setItem('fs_pending_order', JSON.stringify(payload))
     clearCart()
@@ -147,10 +166,26 @@ export default function Koszyk() {
                       <b>{zl(r.price * r.qty)}</b>
                     </div>
                   ))}
+                  {discount > 0 && (
+                    <div className="koszyk-sum-row koszyk-sum-discount">
+                      <span>Rabat {promo.trim().toUpperCase()} (−{promoState.percent}%)</span><b>−{zl(discount)}</b>
+                    </div>
+                  )}
                   <div className="koszyk-sum-row koszyk-sum-total">
-                    <span>Razem</span><b>{zl(total)}</b>
+                    <span>Razem</span><b>{zl(grandTotal)}</b>
                   </div>
                 </div>
+                <div className="koszyk-promo">
+                  <div className="field">
+                    <label>Kod rabatowy</label>
+                    <input value={promo} onChange={(e) => { setPromo(e.target.value); setPromoState(null) }} placeholder="np. FAST" />
+                  </div>
+                  <button className="btn btn-ghost koszyk-promo-btn" onClick={applyPromo} disabled={promoBusy || !promo.trim()}>
+                    {promoBusy ? '…' : 'Zastosuj'}
+                  </button>
+                </div>
+                {promoState?.error && <p className="koszyk-err">{promoState.error}</p>}
+                {discount > 0 && <p className="koszyk-promo-ok">✓ Kod działa — oszczędzasz {zl(discount)}</p>}
                 <div className="koszyk-sum-meta">
                   <p><b>{form.name}</b> · {form.email}{form.phone ? ` · ${form.phone}` : ''}</p>
                   {form.gift && form.gift_for && <p>Voucher dla: <b>{form.gift_for}</b></p>}
@@ -179,7 +214,7 @@ export default function Koszyk() {
                       <b>Płatność online</b>
                       <p className="muted">BLIK, karta, szybki przelew — Tpay</p>
                     </div>
-                    <span className="koszyk-pay-total">{zl(total)}</span>
+                    <span className="koszyk-pay-total">{zl(grandTotal)}</span>
                   </div>
                 </div>
                 <p className="muted" style={{ fontSize: 13 }}>
@@ -187,7 +222,7 @@ export default function Koszyk() {
                 </p>
                 <div className="koszyk-actions">
                   <button className="btn btn-ghost" onClick={() => goStep(2)}>← Wróć</button>
-                  <button className="btn btn-red koszyk-paybtn" onClick={payNow}>Zapłać {zl(total)}</button>
+                  <button className="btn btn-red koszyk-paybtn" onClick={payNow}>Zapłać {zl(grandTotal)}</button>
                 </div>
               </Reveal>
             )}

@@ -4,8 +4,7 @@ import './footer.css'
 
 export default function Footer() {
   return (
-    <footer className="footer">
-      <div className="kerb" />
+    <footer className="footer carbon">
       <div className="wrap footer-in">
         <div className="footer-col">
           <img className="footer-logo" src="/img/2024_05_logo-grey.webp" alt="Fastline Supercars" />

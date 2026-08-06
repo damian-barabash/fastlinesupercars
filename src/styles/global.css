@@ -1,25 +1,33 @@
-/* FASTLINE SUPERCARS — racing/carbon design system */
+/* FASTLINE SUPERCARS — light theme (original look, refined) */
 :root {
-  --bg: #0b0b0d;
-  --bg2: #121216;
-  --bg3: #1a1a1f;
-  --line: #26262c;
-  --red: #c8102e;
-  --red-hot: #e0182f;
-  --white: #f5f5f7;
-  --gray: #9a9aa2;
-  --gray-dark: #55555e;
-  --display: 'Racing Sans One', 'Poppins', sans-serif; /* big headings — same as original site */
-  --label: 'Poppins', sans-serif;                      /* small caps labels & buttons */
+  --bg: #f4f4f6;          /* page background */
+  --panel: #ffffff;       /* cards */
+  --ink: #17171a;         /* main text */
+  --gray: #6b6b74;
+  --gray-light: #a3a3ac;
+  --line: #e7e7ec;
+  --red: #e10600;         /* brand red (same as original site) */
+  --red-dark: #b60500;
+  --dark: #101013;        /* dark bands: header/benefits/footer */
+  --dark2: #17171b;
+  --display: 'Racing Sans One', 'Poppins', sans-serif;  /* headings — same as original */
+  --label: 'Poppins', sans-serif;                       /* labels & buttons */
   --body: 'Poppins', sans-serif;
-  --kerb: repeating-linear-gradient(-45deg, var(--red) 0 14px, #fff 14px 28px);
-  --carbon: radial-gradient(circle at 1px 1px, #1c1c22 1px, transparent 0);
+  --shadow: 0 2px 14px rgba(0, 0, 0, .12);
+  --shadow-lg: 0 14px 40px rgba(0, 0, 0, .16);
+  --carbon:
+    linear-gradient(27deg, #151519 5px, transparent 5px) 0 5px,
+    linear-gradient(207deg, #151519 5px, transparent 5px) 10px 0,
+    linear-gradient(27deg, #1c1c21 5px, transparent 5px) 0 10px,
+    linear-gradient(207deg, #1c1c21 5px, transparent 5px) 10px 5px,
+    linear-gradient(90deg, #17171b 10px, transparent 10px),
+    linear-gradient(#101013 25%, #131317 25%, #131317 50%, transparent 50%, transparent 75%, #141418 75%, #141418);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
   background: var(--bg);
-  color: var(--white);
+  color: var(--ink);
   font-family: var(--body);
   font-size: 16px;
   line-height: 1.65;
@@ -30,10 +38,6 @@ img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; }
 ::selection { background: var(--red); color: #fff; }
-::-webkit-scrollbar { width: 10px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: #2c2c33; }
-::-webkit-scrollbar-thumb:hover { background: var(--red); }
 
 h1, h2, h3, h4, .display {
   font-family: var(--display);
@@ -44,8 +48,8 @@ h1, h2, h3, h4, .display {
 }
 
 .wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
-.section { padding: 96px 0; position: relative; }
-@media (max-width: 720px) { .section { padding: 64px 0; } }
+.section { padding: 88px 0; position: relative; }
+@media (max-width: 720px) { .section { padding: 56px 0; } }
 
 /* racing label — red bar + tracking */
 .r-label {
@@ -55,73 +59,71 @@ h1, h2, h3, h4, .display {
 }
 .r-label::before { content: ''; width: 34px; height: 3px; background: var(--red); }
 
-.h-xl { font-size: clamp(34px, 5vw, 62px); }
-.h-lg { font-size: clamp(28px, 3.6vw, 44px); }
-.h-md { font-size: clamp(21px, 2.4vw, 28px); }
+.h-xl { font-size: clamp(32px, 4.6vw, 56px); }
+.h-lg { font-size: clamp(26px, 3.4vw, 40px); }
+.h-md { font-size: clamp(20px, 2.2vw, 26px); }
 
-/* buttons — sharp, notched */
+/* buttons — red, italic bold like original, sharp notch */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  font-family: var(--label); font-weight: 600; font-size: 14px;
-  letter-spacing: 0.14em; text-transform: uppercase;
-  padding: 15px 34px; border: none; position: relative;
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  font-family: var(--label); font-weight: 700; font-style: italic; font-size: 14px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 14px 32px; border: none; position: relative;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
   transition: transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
   user-select: none;
 }
 .btn:active { transform: translateY(1px) scale(.99); }
 .btn-red { background: var(--red); color: #fff; }
-.btn-red:hover { background: var(--red-hot); box-shadow: 0 8px 32px rgba(200,16,46,.35); transform: translateY(-2px); }
-.btn-ghost { background: transparent; color: var(--white); box-shadow: inset 0 0 0 1.5px #3a3a42; }
-.btn-ghost:hover { box-shadow: inset 0 0 0 1.5px var(--red); color: #fff; transform: translateY(-2px); }
-.btn-white { background: #fff; color: #0b0b0d; }
+.btn-red:hover { background: var(--red-dark); box-shadow: 0 8px 26px rgba(225,6,0,.35); transform: translateY(-2px); }
+.btn-ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+.btn-ghost:hover { box-shadow: inset 0 0 0 2px var(--red); color: var(--red); transform: translateY(-2px); }
+.btn-white { background: #fff; color: var(--ink); box-shadow: var(--shadow); }
 .btn-white:hover { background: var(--red); color: #fff; transform: translateY(-2px); }
 .btn[disabled] { opacity: .45; pointer-events: none; }
 
-/* kerb strip */
-.kerb { height: 8px; background: var(--kerb); background-size: 40px 8px; }
-
 /* card */
 .card {
-  background: var(--bg2);
-  border: 1px solid var(--line);
-  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%);
-  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
+  transition: transform .25s ease, box-shadow .25s ease;
   position: relative; overflow: hidden;
 }
-.card:hover { transform: translateY(-6px); border-color: #3d1017; box-shadow: 0 18px 48px rgba(0,0,0,.5), 0 0 0 1px rgba(200,16,46,.25); }
+.card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
 
-/* carbon texture panel */
+/* dark band helper (carbon texture) */
 .carbon {
-  background-color: var(--bg2);
-  background-image: var(--carbon);
-  background-size: 7px 7px;
+  background: var(--carbon);
+  background-size: 20px 20px;
+  background-color: var(--dark);
+  color: #fff;
 }
 
 /* inputs */
 .field { display: flex; flex-direction: column; gap: 7px; }
-.field label { font-family: var(--display); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--gray); }
+.field label { font-family: var(--label); font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--gray); }
 .field input, .field textarea, .field select {
-  background: var(--bg3); border: 1px solid var(--line); color: var(--white);
-  font-family: var(--body); font-size: 15px; padding: 13px 16px; outline: none;
+  background: #fff; border: 1.5px solid var(--line); color: var(--ink);
+  font-family: var(--body); font-size: 15px; padding: 12px 15px; outline: none;
   transition: border-color .15s ease;
 }
 .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--red); }
 
 /* scroll progress */
-.speedbar { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, var(--red), #ff4d63); z-index: 400; transform-origin: 0 50%; width: 100%; }
+.speedbar { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, var(--red), #ff5a4d); z-index: 400; transform-origin: 0 50%; width: 100%; }
 
 /* marquee */
-.marquee { overflow: hidden; white-space: nowrap; border-block: 1px solid var(--line); user-select: none; }
-.marquee-inner { display: inline-flex; gap: 48px; padding: 18px 0; animation: marq 34s linear infinite; will-change: transform; }
+.marquee { overflow: hidden; white-space: nowrap; background: #fff; border-block: 1px solid var(--line); user-select: none; }
+.marquee-inner { display: inline-flex; gap: 48px; padding: 16px 0; animation: marq 34s linear infinite; will-change: transform; }
 @keyframes marq { to { transform: translateX(-50%); } }
-.marquee span { font-family: var(--display); font-size: 15px; letter-spacing: .3em; text-transform: uppercase; color: var(--gray-dark); }
-.marquee span b { color: var(--red); font-weight: 600; }
+.marquee span { font-family: var(--label); font-weight: 700; font-style: italic; font-size: 13px; letter-spacing: .26em; text-transform: uppercase; color: var(--gray-light); }
+.marquee span b { color: var(--red); }
 
 /* outlined giant number */
 .ghost-num {
-  font-family: var(--display); font-weight: 700; line-height: 1;
-  color: transparent; -webkit-text-stroke: 1.5px #2c2c33;
+  font-family: var(--display); font-weight: 400; line-height: 1;
+  color: transparent; -webkit-text-stroke: 1.5px #d9d9e0;
 }
 
 /* utility */

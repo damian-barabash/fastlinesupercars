@@ -92,10 +92,55 @@ Deno.serve(async (req) => {
       }
 
       case 'vouchers.list': {
-        let q = 'vouchers?select=*&order=created_at.desc&limit=300'
+        let q = 'vouchers?select=*&order=created_at.desc&limit=500'
         if (body.status) q += `&status=eq.${encodeURIComponent(body.status)}`
+        if (body.product) q += `&product_id=eq.${encodeURIComponent(body.product)}`
+        if (body.source) q += `&source=eq.${encodeURIComponent(body.source)}`
         if (body.search) q += `&or=(code.ilike.*${encodeURIComponent(body.search)}*,recipient.ilike.*${encodeURIComponent(body.search)}*)`
         return J(await db(q))
+      }
+
+      case 'vouchers.generate': {
+        // body: { product_id, variant?, count, prefix? } → N new import-codes
+        const prods = await db(`products?id=eq.${encodeURIComponent(body.product_id)}&select=id,name`)
+        const prod = prods?.[0]
+        if (!prod) return J({ error: 'Nieznany produkt' }, 400)
+        const count = Math.min(Math.max(1, +body.count || 1), 100)
+        const auto = prod.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)
+        const lapDigit = (body.variant || '').match(/\d+/)?.[0] || ''
+        const prefix = ((body.prefix || auto) + lapDigit).toUpperCase().replace(/[^A-Z0-9]/g, '')
+        const chars = 'ABCDEFGHJKLMNPRSTUWXYZ'
+        const digits = '23456789'
+        const valid = new Date(); valid.setFullYear(valid.getFullYear() + 1)
+        const rows = []
+        for (let i = 0; i < count; i++) {
+          const rnd = crypto.getRandomValues(new Uint8Array(8))
+          let tail = ''
+          for (let j = 0; j < 4; j++) tail += chars[rnd[j] % chars.length]
+          for (let j = 4; j < 8; j++) tail += digits[rnd[j] % digits.length]
+          rows.push({
+            code: prefix + tail,
+            items_text: `${prod.name}${body.variant ? ' — ' + body.variant : ''}`,
+            product_id: prod.id, variant: body.variant || '', source: 'import',
+            status: 'active', valid_until: valid.toISOString().slice(0, 10),
+          })
+        }
+        const inserted = await db('vouchers', { method: 'POST', body: JSON.stringify(rows) })
+        return J({ ok: true, codes: inserted.map((r: { code: string }) => r.code) })
+      }
+
+      case 'settings.get': {
+        const rows = await db('settings?select=key,value')
+        const m: Record<string, string> = {}
+        for (const r of rows) m[r.key] = r.value
+        return J(m)
+      }
+
+      case 'settings.set': {
+        const entries = Object.entries(body.data || {}).map(([key, value]) => ({ key, value: String(value) }))
+        if (entries.length)
+          await db('settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify(entries) })
+        return J({ ok: true })
       }
 
       case 'vouchers.update': {

@@ -1,16 +1,17 @@
 .onas-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
 @media (max-width: 900px) { .onas-grid { grid-template-columns: 1fr; } }
 .onas-copy { display: flex; flex-direction: column; gap: 14px; margin-top: 24px; color: var(--gray); max-width: 560px; }
-.onas-lead { color: #fff; font-size: 19px; font-weight: 600; }
-.onas-strong { color: #fff; font-weight: 600; }
+.onas-lead { color: var(--ink); font-size: 19px; font-weight: 600; }
+.onas-strong { color: var(--ink); font-weight: 600; }
 .onas-img { position: relative; }
 .onas-img img { clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 0 100%); }
 .onas-img-frame { position: absolute; inset: 18px -18px -18px 18px; border: 1.5px solid var(--red); z-index: -1;
   clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 0 100%); }
 
-.onas-fra { background: linear-gradient(120deg, #a30d24, var(--red) 60%, #e0182f); }
+.onas-fra { color: #fff; }
 .onas-fra-in { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 56px; align-items: center; padding-block: 72px; }
 @media (max-width: 860px) { .onas-fra-in { grid-template-columns: 1fr; } }
 .onas-fra-img img { clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%); box-shadow: 0 24px 60px rgba(0,0,0,.4); }
 .onas-fra-text { color: rgba(255,255,255,.92); margin-top: 18px; line-height: 1.75; }
-.onas-fra .r-label::before { background: #fff; }
+.onas-fra .r-label::before { background: var(--red); }
+.onas-fra .r-label { color: #cfcfd6; }
