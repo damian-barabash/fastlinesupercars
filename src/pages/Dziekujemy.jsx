@@ -80,7 +80,7 @@ export default function Dziekujemy() {
         <h1 className="h-xl">Dziękujemy{order ? `, zamówienie #${order.number}` : ''}!</h1>
         <p className="dz-lead muted">
           {phase === 'paid'
-            ? <>Płatność potwierdzona. Voucher PDF wysłaliśmy na <b style={{ color: '#fff' }}>{order?.email}</b>.</>
+            ? <>Płatność potwierdzona. Voucher PDF wysłaliśmy na <b style={{ color: 'var(--ink)' }}>{order?.email}</b>.</>
             : 'Przetwarzamy Twoją płatność i generujemy voucher — potrwa to kilka sekund…'}
         </p>
 
