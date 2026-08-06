@@ -337,6 +337,19 @@ const TEMPLATES = [
   'templates/pakiet-japonski.jpg', 'templates/focus-rs.jpg', 'templates/toyota-gr-yaris.jpg',
 ]
 
+const slugify = (name) => name.toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/ł/g, 'l')
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+
+const BLANK_PRODUCT = {
+  id: '', name: '', subtitle: '', description: '', images: [], cover: '',
+  voucher_template: 'templates/alpine-a110.jpg', variants: [], price_from: 0,
+  sort: 100, active: true, category: ['pelna-oferta'],
+  short_specs: [], full_specs: [],
+  tracks: ['Tor Łódź', 'Tor Modlin', 'Tor Wrocław', 'Tor Pszczółki', 'Tor Poznań'],
+}
+
 function Products() {
   const [list, setList] = useState(null)
   const [edit, setEdit] = useState(null)
@@ -347,16 +360,30 @@ function Products() {
 
   if (!list) return <p className="adm-muted">Ładowanie…</p>
 
-  function openEdit(p) {
+  function openEdit(p, isNew = false) {
     setEdit({
       ...p,
+      isNew,
       images: [...(p.images || [])],
       variants: (p.variants || []).map((v) => ({ laps: v.laps, priceZl: toZl(v.price) })),
-      priceFromZl: toZl(p.price_from),
+      priceFromZl: isNew ? '' : toZl(p.price_from),
     })
   }
 
+  async function del(p) {
+    if (!confirm(`Usunąć produkt „${p.name}"? Zniknie ze strony. Tej operacji nie można cofnąć.`)) return
+    setList((l) => l.filter((x) => x.id !== p.id))
+    try { await adminApi('products.delete', { id: p.id }) } catch (e) { alert(e.message); load() }
+  }
+
   async function save() {
+    if (!edit.name.trim()) return alert('Podaj nazwę produktu')
+    let id = edit.id
+    if (edit.isNew) {
+      id = slugify(edit.name)
+      if (!id) return alert('Podaj nazwę produktu')
+      if (list.some((x) => x.id === id)) return alert(`Produkt o adresie „${id}" już istnieje — zmień nazwę`)
+    }
     setBusy(true)
     try {
       const variants = edit.variants
@@ -364,13 +391,13 @@ function Products() {
         .map((v) => ({ laps: v.laps.trim(), price: toGr(v.priceZl) }))
       const price_from = variants.length ? Math.min(...variants.map((v) => v.price)) : toGr(edit.priceFromZl)
       const p = {
-        id: edit.id, name: edit.name, subtitle: edit.subtitle, description: edit.description,
+        id, name: edit.name, subtitle: edit.subtitle, description: edit.description,
         images: edit.images, cover: edit.cover || edit.images[0] || '',
         voucher_template: edit.voucher_template, variants, price_from,
         sort: edit.sort, active: edit.active, category: edit.category,
         short_specs: edit.short_specs, full_specs: edit.full_specs, tracks: edit.tracks,
       }
-      setList((l) => l.map((x) => (x.id === p.id ? { ...x, ...p } : x)))
+      setList((l) => (edit.isNew ? [...l, p] : l.map((x) => (x.id === p.id ? { ...x, ...p } : x))))
       setEdit(null)
       await adminApi('products.save', { product: p })
       load()
@@ -382,7 +409,7 @@ function Products() {
     return (
       <div>
         <div className="adm-bar">
-          <h2 className="adm-h">{edit.name}</h2>
+          <h2 className="adm-h">{edit.isNew ? "Nowy produkt" : edit.name}</h2>
           <div className="adm-bar-btns">
             <button className="adm-btn-sec" onClick={() => setEdit(null)}>Anuluj</button>
             <button className="btn btn-red" disabled={busy} onClick={save}>{busy ? 'Zapisywanie…' : 'Zapisz produkt'}</button>
@@ -468,7 +495,10 @@ function Products() {
 
   return (
     <div>
-      <h2 className="adm-h">Produkty</h2>
+      <div className="adm-bar">
+        <h2 className="adm-h">Produkty</h2>
+        <button className="btn btn-red" onClick={() => openEdit(BLANK_PRODUCT, true)}>+ Dodaj produkt</button>
+      </div>
       <div className="adm-table-wrap adm-card">
         <table className="adm-table">
           <thead><tr><th></th><th>Produkt</th><th>Cena od</th><th>Warianty</th><th>Widoczny</th><th></th></tr></thead>
@@ -480,7 +510,10 @@ function Products() {
                 <td>{zl(p.price_from)}</td>
                 <td>{p.variants?.length || 0}</td>
                 <td>{p.active ? <span className="adm-badge is-active">tak</span> : <span className="adm-badge">nie</span>}</td>
-                <td><button className="adm-btn-sec" onClick={() => openEdit(p)}>Edytuj</button></td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  <button className="adm-btn-sec" onClick={() => openEdit(p)}>Edytuj</button>{' '}
+                  <button className="adm-icon-btn adm-del" title="Usuń produkt" onClick={() => del(p)}>✕</button>
+                </td>
               </tr>
             ))}
           </tbody>
