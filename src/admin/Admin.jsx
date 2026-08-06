@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { adminApi, zl } from '../lib/api.js'
-import { DEFAULTS, IMG_SLOTS } from '../data/defaults.js'
+import { DEFAULTS } from '../data/defaults.js'
 import VisualEditor from './VisualEditor.jsx'
 import './admin.css'
 
 const TABS = [
   ['stats', 'Statystyki'],
   ['editor', 'Edycja strony'],
-  ['images', 'Zdjęcia'],
   ['products', 'Produkty'],
   ['orders', 'Zamówienia'],
   ['vouchers', 'Vouchery'],
@@ -48,7 +47,6 @@ export default function Admin() {
       <main className="adm-main">
         {tab === 'stats' && <Stats />}
         {tab === 'editor' && <VisualEditor />}
-        {tab === 'images' && <Images />}
         {tab === 'products' && <Products />}
         {tab === 'orders' && <Orders />}
         {tab === 'vouchers' && <Vouchers />}
@@ -179,152 +177,6 @@ function Stats() {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-/* ---------- Treści ---------- */
-
-const GROUPS = {
-  'Pasek górny / nawigacja': ['top.'],
-  'Strona główna — hero': ['hero.'],
-  'Strona główna — benefity': ['ben.'],
-  'Strona główna — flota, voucher, kroki': ['fleet.', 'vban.', 'steps.'],
-  'O nas (główna + podstrona)': ['about.', 'on.'],
-  'Statystyki (liczby)': ['stat.'],
-  'FAQ': ['faq.'],
-  'Opinie, kontakt, stopka': ['rev.', 'ct.', 'ft.'],
-  'Oferta': ['of.'],
-  'Kalendarz i tory': ['kal.', 'tory.'],
-}
-
-function Content() {
-  const [rows, setRows] = useState(null)
-  const [dirty, setDirty] = useState({})
-  const [saving, setSaving] = useState(false)
-  const [savedAt, setSavedAt] = useState(0)
-
-  useEffect(() => {
-    adminApi('content.get').then((r) => {
-      const over = {}
-      for (const x of r) over[x.key] = x.value
-      setRows({ ...DEFAULTS, ...over })
-    }).catch(() => setRows({ ...DEFAULTS }))
-  }, [])
-
-  if (!rows) return <p className="adm-muted">Ładowanie…</p>
-
-  async function save() {
-    setSaving(true)
-    try {
-      await adminApi('content.set', { data: dirty })
-      setDirty({})
-      setSavedAt(Date.now())
-    } catch (e) { alert('Błąd zapisu: ' + e.message) }
-    setSaving(false)
-  }
-
-  const dirtyCount = Object.keys(dirty).length
-
-  return (
-    <div>
-      <div className="adm-bar">
-        <div>
-          <h2 className="adm-h">Treści strony</h2>
-          <p className="adm-muted">Zmiany będą widoczne na stronie po zapisaniu.</p>
-        </div>
-        <button className="btn btn-red" disabled={!dirtyCount || saving} onClick={save}>
-          {saving ? 'Zapisywanie…' : dirtyCount ? `Zapisz zmiany (${dirtyCount})` : savedAt ? '✓ Zapisano' : 'Brak zmian'}
-        </button>
-      </div>
-      {Object.entries(GROUPS).map(([g, prefixes]) => {
-        const keys = Object.keys(rows).filter((k) => !k.startsWith('img.') && prefixes.some((p) => k.startsWith(p)))
-        if (!keys.length) return null
-        return (
-          <details key={g} className="adm-card adm-group">
-            <summary>{g} <span className="adm-count">{keys.length}</span></summary>
-            <div className="adm-group-in">
-              {keys.map((k) => (
-                <div key={k} className="field">
-                  <label>{k}</label>
-                  <textarea
-                    rows={Math.min(6, Math.max(1, Math.ceil((rows[k] || '').length / 90)))}
-                    value={rows[k]}
-                    onChange={(e) => { setRows({ ...rows, [k]: e.target.value }); setDirty({ ...dirty, [k]: e.target.value }) }}
-                  />
-                </div>
-              ))}
-            </div>
-          </details>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ---------- Zdjęcia (visual site-image editor) ---------- */
-
-function Images() {
-  const [imgs, setImgs] = useState(null)
-  const [dirty, setDirty] = useState({})
-  const [saving, setSaving] = useState(false)
-  const [savedAt, setSavedAt] = useState(0)
-
-  useEffect(() => {
-    adminApi('content.get').then((r) => {
-      const over = {}
-      for (const x of r) over[x.key] = x.value
-      setImgs({ ...DEFAULTS, ...over })
-    }).catch(() => setImgs({ ...DEFAULTS }))
-  }, [])
-
-  if (!imgs) return <p className="adm-muted">Ładowanie…</p>
-
-  const set = (k, url) => {
-    setImgs({ ...imgs, [k]: url })
-    setDirty({ ...dirty, [k]: url })
-  }
-
-  async function save() {
-    setSaving(true)
-    try {
-      await adminApi('content.set', { data: dirty })
-      setDirty({})
-      setSavedAt(Date.now())
-    } catch (e) { alert('Błąd zapisu: ' + e.message) }
-    setSaving(false)
-  }
-
-  const dirtyCount = Object.keys(dirty).length
-
-  return (
-    <div>
-      <div className="adm-bar">
-        <div>
-          <h2 className="adm-h">Zdjęcia strony</h2>
-          <p className="adm-muted">Kliknij „Zmień", wgraj nowe zdjęcie i zapisz. Zdjęcia produktów edytujesz w zakładce Produkty.</p>
-        </div>
-        <button className="btn btn-red" disabled={!dirtyCount || saving} onClick={save}>
-          {saving ? 'Zapisywanie…' : dirtyCount ? `Zapisz zmiany (${dirtyCount})` : savedAt ? '✓ Zapisano' : 'Brak zmian'}
-        </button>
-      </div>
-      <div className="adm-imgs">
-        {IMG_SLOTS.map((slot) => (
-          <div key={slot.key} className={`adm-card adm-img-slot ${dirty[slot.key] ? 'is-dirty' : ''}`}>
-            <div className="adm-img-preview">
-              <img src={imgs[slot.key]} alt={slot.label} loading="lazy" />
-            </div>
-            <div className="adm-img-meta">
-              <b>{slot.label}</b>
-              {slot.hint && <span className="adm-muted">{slot.hint}</span>}
-              <div className="adm-img-actions">
-                <UploadBtn onDone={(url) => set(slot.key, url)}>Zmień</UploadBtn>
-                {dirty[slot.key] && <span className="adm-dirty-dot">● niezapisane</span>}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

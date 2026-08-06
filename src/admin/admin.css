@@ -211,3 +211,5 @@
 /* let clicks reach the hero banner image under the CTA overlay */
 .ve-canvas .hero-overlay { pointer-events: none; }
 .ve-canvas .hero-overlay .btn { pointer-events: auto; }
+/* band backgrounds: lift above the dark overlay so empty areas are clickable (texts stay on top at z2) */
+.ve-canvas .vban-bg, .ve-canvas .about-band-bg, .ve-canvas .rev-bg { z-index: 1; }
