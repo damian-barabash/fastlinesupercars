@@ -4,8 +4,8 @@
 @media (max-width: 1000px) { .oferta-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 620px) { .oferta-grid { grid-template-columns: 1fr; } }
 
-.oferta-gain { color: #fff; }
-.oferta-gain-in { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 48px; padding-block: 120px; align-items: center; }
+.oferta-gain { color: #fff; padding: 120px 0; }
+.oferta-gain-in { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 48px; align-items: center; }
 .oferta-gain-list { display: flex; flex-direction: column; }
 .oferta-gain-item { display: flex; gap: 22px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,.12); }
 .oferta-gain-item:last-child { border-bottom: none; }
@@ -13,4 +13,4 @@
 .oferta-gain-item p { font-size: 18px; font-family: var(--label); font-weight: 700; font-style: italic; text-transform: uppercase; letter-spacing: .04em; }
 @media (max-width: 860px) { .oferta-gain-in { grid-template-columns: 1fr; gap: 20px; } }
 
-@media (max-width: 720px) { .oferta-gain-in { padding-block: 72px; } }
+@media (max-width: 720px) { .oferta-gain { padding: 72px 0; } }

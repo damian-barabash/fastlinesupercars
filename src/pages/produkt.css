@@ -2,8 +2,8 @@
 .produkt-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: start; }
 @media (max-width: 960px) { .produkt-grid { grid-template-columns: 1fr; gap: 36px; } }
 
-.produkt-main-img { aspect-ratio: 4/3; }
-.produkt-main-img img { width: 100%; height: 100%; object-fit: cover; }
+.produkt-main-img { aspect-ratio: 4/3; background: #f0f0f3; display: flex; align-items: center; justify-content: center; }
+.produkt-main-img img { width: 100%; height: 100%; object-fit: contain; }
 .produkt-thumbs { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-top: 10px; }
 .produkt-thumb { border: 1.5px solid var(--line); background: #fff; padding: 0; aspect-ratio: 1; overflow: hidden; opacity: .65; transition: opacity .15s ease, border-color .15s ease; }
 .produkt-thumb img { width: 100%; height: 100%; object-fit: cover; }

@@ -34,10 +34,10 @@
 @media (max-width: 620px) { .fleet-grid { grid-template-columns: 1fr; } }
 
 /* VOUCHER BANNER — dark photo band */
-.vban { position: relative; overflow: hidden; background: #0c0c0e; }
+.vban { position: relative; overflow: hidden; background: #0c0c0e; padding: 140px 0; }
 .vban-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; }
 .vban::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,5,7,.88) 0%, rgba(5,5,7,.55) 55%, rgba(5,5,7,.25) 100%); z-index: 1; }
-.vban-in { position: relative; z-index: 2; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; padding-top: 140px; padding-bottom: 140px; }
+.vban-in { position: relative; z-index: 2; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; }
 .vban-copy { color: #fff; }
 .vban-label { color: #cfcfd6; }
 .vban-text { color: rgba(255,255,255,.88); font-size: 17px; margin-top: 14px; max-width: 460px; }
@@ -56,9 +56,9 @@
 @media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
 
 /* ABOUT — panorama band with white card */
-.about-band { position: relative; overflow: hidden; background: #0c0c0e; }
+.about-band { position: relative; overflow: hidden; background: #0c0c0e; padding: 120px 0; }
 .about-band-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .8; }
-.about-band-in { position: relative; z-index: 2; padding-block: 120px; display: flex; }
+.about-band-in { position: relative; z-index: 2; display: flex; }
 .about-card {
   background: rgba(255,255,255,.96); max-width: 560px; padding: 42px 46px;
   clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%);
@@ -100,7 +100,7 @@
 .rev-label { color: #cfcfd6; }
 
 @media (max-width: 720px) {
-  .vban-in { padding-top: 72px; padding-bottom: 72px; }
+  .vban { padding: 72px 0; }
   .rev-sec { padding: 72px 0; }
-  .about-band-in { padding-block: 72px; }
+  .about-band { padding: 72px 0; }
 }

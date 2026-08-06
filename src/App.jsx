@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { ContentProvider } from './lib/content.jsx'
 import { startSmooth, stopSmooth, scrollTop } from './lib/smooth.js'
 import Nav from './components/Nav.jsx'
@@ -48,6 +49,12 @@ export default function App() {
       <ScrollToTop />
       <SpeedFx />
       <Nav />
+      <motion.div
+        key={pathname}
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+      >
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/oferta" element={<Oferta />} />
@@ -68,6 +75,7 @@ export default function App() {
         <Route path="/privacy-policy" element={<Navigate to="/polityka-prywatnosci" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </motion.div>
       <Footer />
     </ContentProvider>
   )
