@@ -14,8 +14,197 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Racing+Sans+One&family=Poppins:wght@300;400;500;600;700&display=swap&subset=latin-ext" rel="stylesheet" />
+
+    <!-- PRELOADER: inline (bez bibliotek), bo musi malować się przed bundlem -->
+    <style>
+      #fs-pre {
+        position: fixed; inset: 0; z-index: 9999; background: #0a0a0c;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden; will-change: transform, opacity;
+        transition: opacity .5s ease, transform .5s cubic-bezier(.7,0,.84,0);
+      }
+      #fs-pre.fs-out { opacity: 0; transform: translateY(-6%) scale(1.06); pointer-events: none; }
+      /* tor: skośne smugi prędkości przelatujące w tle */
+      #fs-pre::before {
+        content: ''; position: absolute; inset: -40% -20%;
+        background: repeating-linear-gradient(115deg, rgba(255,255,255,.045) 0 2px, transparent 2px 90px);
+        animation: fsStreak 1.1s linear infinite;
+      }
+      #fs-pre::after {
+        content: ''; position: absolute; inset: 0;
+        background: radial-gradient(ellipse at 50% 45%, transparent 20%, rgba(0,0,0,.85) 78%);
+      }
+      @keyframes fsStreak { to { transform: translateX(-90px); } }
+
+      .fs-stage { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 24px; }
+
+      /* gantry startowy F1 — 5 par świateł */
+      .fs-gantry { position: relative; display: flex; flex-direction: column; align-items: center; }
+      .fs-arm { width: min(320px, 74vw); height: 7px; background: linear-gradient(#3a3a42, #16161a); border-radius: 2px; }
+      .fs-arm::before, .fs-arm::after {
+        content: ''; position: absolute; top: 0; width: 7px; height: 26px; background: linear-gradient(#2a2a31, #131317);
+      }
+      .fs-arm::before { left: 0; } .fs-arm::after { right: 0; }
+      .fs-lights { display: flex; gap: min(18px, 4vw); padding: 12px min(14px, 3vw) 0; }
+      .fs-col { display: flex; flex-direction: column; gap: 7px; padding: 7px 6px; background: #101014; border: 1px solid #212127; border-radius: 3px; }
+      .fs-bulb {
+        width: min(20px, 4.6vw); height: min(20px, 4.6vw); border-radius: 50%;
+        background: #241012; box-shadow: inset 0 0 6px rgba(0,0,0,.9);
+        transition: background .12s ease, box-shadow .12s ease;
+      }
+      .fs-col.on .fs-bulb { background: #ff1a10; box-shadow: 0 0 16px rgba(255,26,16,.9), 0 0 42px rgba(255,26,16,.45), inset 0 0 6px rgba(255,180,170,.5); }
+      .fs-col.go .fs-bulb { background: #19e05c; box-shadow: 0 0 18px rgba(25,224,92,.9), 0 0 50px rgba(25,224,92,.45); }
+
+      /* wejście na <img>, drganie „na obrotach" na wrapperze — inaczej druga animacja
+         zjada wypełnienie pierwszej i logo znika */
+      .fs-logo { display: block; width: min(280px, 64vw); height: auto; opacity: 0; animation: fsLogo .7s .1s cubic-bezier(.2,.8,.3,1) forwards; }
+      @keyframes fsLogo { from { opacity: 0; transform: translateY(14px) scale(.94); } to { opacity: 1; transform: none; } }
+      #fs-pre.fs-rev .fs-logo-wrap { animation: fsIdle .12s linear infinite; }
+      @keyframes fsIdle { 50% { transform: translate3d(.6px, -.6px, 0); } }
+
+      /* listwa shift-lights zamiast zwykłego paska postępu */
+      .fs-rpm { display: flex; gap: 3px; }
+      .fs-seg {
+        width: min(15px, 3.4vw); height: 9px; background: #17171c; transform: skewX(-22deg);
+        transition: background .1s ease, box-shadow .1s ease;
+      }
+      .fs-seg.lit { background: #19e05c; box-shadow: 0 0 10px rgba(25,224,92,.55); }
+      .fs-seg.lit.mid { background: #ffc400; box-shadow: 0 0 10px rgba(255,196,0,.55); }
+      .fs-seg.lit.hot { background: #e10600; box-shadow: 0 0 12px rgba(225,6,0,.7); }
+
+      .fs-meta {
+        display: flex; align-items: baseline; justify-content: space-between; gap: 18px;
+        width: min(320px, 74vw);
+        font-family: Poppins, system-ui, -apple-system, sans-serif;
+        font-size: 10.5px; font-weight: 600; letter-spacing: .26em; text-transform: uppercase; color: #6f6f7a;
+      }
+      .fs-pct { font-family: 'Racing Sans One', Poppins, system-ui, sans-serif; font-style: italic; font-size: 19px; letter-spacing: .04em; color: #fff; }
+      #fs-pre.fs-go .fs-status { color: #19e05c; }
+
+      /* szachownica przelatująca na wyjściu */
+      .fs-flag {
+        position: absolute; inset: 0; z-index: 3; opacity: 0; transform: translateY(100%);
+        background:
+          repeating-conic-gradient(#fff 0 25%, #0a0a0c 0 50%) 0 0 / 46px 46px;
+      }
+      #fs-pre.fs-go .fs-flag { animation: fsFlag .62s cubic-bezier(.6,0,.2,1) forwards; }
+      @keyframes fsFlag {
+        0% { opacity: .95; transform: translateY(100%); }
+        55% { opacity: .95; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-100%); }
+      }
+
+      @media (min-width: 900px) {
+        .fs-stage { gap: 34px; }
+        .fs-arm { width: 430px; }
+        .fs-lights { gap: 26px; padding-top: 14px; }
+        .fs-bulb { width: 26px; height: 26px; }
+        .fs-logo { width: 380px; }
+        .fs-seg { width: 20px; height: 12px; }
+        .fs-meta { width: 430px; font-size: 11.5px; }
+        .fs-pct { font-size: 24px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #fs-pre::before, .fs-flag { animation: none !important; }
+        .fs-logo { animation: none; opacity: 1; }
+      }
+    </style>
   </head>
   <body>
+    <div id="fs-pre" aria-hidden="true" role="presentation">
+      <div class="fs-stage">
+        <div class="fs-gantry">
+          <div class="fs-arm"></div>
+          <div class="fs-lights" id="fs-lights"></div>
+        </div>
+        <div class="fs-logo-wrap"><img class="fs-logo" src="/img/2024_05_logo-grey.webp" alt="" /></div>
+        <div class="fs-rpm" id="fs-rpm"></div>
+        <div class="fs-meta"><span class="fs-status" id="fs-status">Rozgrzewka</span><span class="fs-pct" id="fs-pct">0%</span></div>
+      </div>
+      <div class="fs-flag"></div>
+    </div>
+    <script>
+      (function () {
+        var pre = document.getElementById('fs-pre')
+        if (!pre) return
+        // panel admina bez animacji startowej
+        if (location.pathname.indexOf('/admin') === 0) { pre.parentNode.removeChild(pre); return }
+
+        var html = document.documentElement
+        var prevOverflow = html.style.overflow
+        html.style.overflow = 'hidden'
+
+        var lights = document.getElementById('fs-lights')
+        var cols = []
+        for (var i = 0; i < 5; i++) {
+          var c = document.createElement('div')
+          c.className = 'fs-col'
+          c.innerHTML = '<span class="fs-bulb"></span><span class="fs-bulb"></span>'
+          lights.appendChild(c); cols.push(c)
+        }
+        var rpm = document.getElementById('fs-rpm')
+        var segs = []
+        for (var j = 0; j < 14; j++) {
+          var s = document.createElement('span')
+          s.className = 'fs-seg' + (j > 10 ? ' hot' : j > 6 ? ' mid' : '')
+          rpm.appendChild(s); segs.push(s)
+        }
+        var pctEl = document.getElementById('fs-pct')
+        var statusEl = document.getElementById('fs-status')
+
+        var STATUS = [[0, 'Rozgrzewka'], [30, 'Okrążenie formujące'], [70, 'Na polu startowym'], [100, 'Światła gasną']]
+        var target = 8, shown = 0, done = false
+        var started = Date.now()
+        var MIN_MS = 1150, MAX_MS = 4200
+
+        function bump(v) { if (v > target) target = v }
+        if (document.readyState !== 'loading') bump(38)
+        document.addEventListener('DOMContentLoaded', function () { bump(38) })
+        window.addEventListener('fs-app-ready', function () { bump(82) })
+        window.addEventListener('load', function () { bump(100) })
+        setTimeout(function () { bump(100) }, MAX_MS)
+
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+        function paint(p) {
+          pctEl.textContent = Math.round(p) + '%'
+          for (var k = 0; k < STATUS.length; k++) if (p >= STATUS[k][0]) statusEl.textContent = STATUS[k][1]
+          var litSegs = Math.round((p / 100) * segs.length)
+          for (var s2 = 0; s2 < segs.length; s2++) segs[s2].classList.toggle('lit', s2 < litSegs)
+          var litCols = Math.min(5, Math.floor(p / 20))
+          for (var c2 = 0; c2 < cols.length; c2++) cols[c2].classList.toggle('on', c2 < litCols)
+          if (p > 55) pre.classList.add('fs-rev')
+        }
+
+        function finish() {
+          if (done) return
+          done = true
+          // światła gasną, chwila ciszy — i start
+          for (var c3 = 0; c3 < cols.length; c3++) cols[c3].classList.remove('on')
+          statusEl.textContent = 'Start!'
+          setTimeout(function () {
+            pre.classList.add('fs-go')
+            for (var c4 = 0; c4 < cols.length; c4++) cols[c4].classList.add('go')
+            setTimeout(function () {
+              pre.classList.add('fs-out')
+              html.style.overflow = prevOverflow
+              window.dispatchEvent(new Event('fs-preloader-done'))
+              setTimeout(function () { if (pre.parentNode) pre.parentNode.removeChild(pre) }, 620)
+            }, reduce ? 0 : 300)
+          }, reduce ? 0 : 260)
+        }
+
+        function tick() {
+          shown += (target - shown) * 0.08 + 0.35
+          if (shown > 100) shown = 100
+          paint(shown)
+          if (shown >= 99.6 && Date.now() - started >= MIN_MS) { paint(100); finish(); return }
+          requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      })()
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

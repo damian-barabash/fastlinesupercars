@@ -19,10 +19,15 @@
 .benefit-icon { width: 62px; height: 48px; object-fit: contain; }
 .benefit-title { font-size: 19px; color: #fff; font-style: italic; }
 .benefit-text { color: #a7a7af; font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; font-family: var(--label); font-weight: 600; }
-@media (max-width: 980px) { .benefits { grid-template-columns: 1fr 1fr; gap: 20px; } }
+/* na węższych ekranach kafelki są wyśrodkowane — jak reszta treści */
+@media (max-width: 980px) {
+  .benefits { grid-template-columns: 1fr 1fr; gap: 20px; }
+  .benefit { justify-content: center; }
+}
 @media (max-width: 540px) {
-  .benefits { grid-template-columns: 1fr 1fr; gap: 16px 12px; }
-  .benefit { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .benefits { grid-template-columns: 1fr 1fr; gap: 22px 12px; }
+  .benefit { flex-direction: column; align-items: center; gap: 10px; min-width: 0; }
+  .benefit > div { max-width: 100%; }   /* inaczej długie tytuły wychodzą poza swoją kolumnę */
   .benefit-icon { width: 46px; height: 36px; }
   .benefit-title { font-size: 16px; }
   .benefit-text { font-size: 10px; }

@@ -36,6 +36,13 @@ export default function App() {
     else startSmooth()
   }, [isAdmin])
 
+  // sygnał dla preloadera (index.html): pierwszy ekran jest już namalowany
+  useEffect(() => {
+    const id = requestAnimationFrame(() =>
+      requestAnimationFrame(() => window.dispatchEvent(new Event('fs-app-ready'))))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
   if (isAdmin) {
     return (
       <Suspense fallback={<div style={{ padding: 60, textAlign: 'center', color: '#9a9aa2' }}>Ładowanie panelu…</div>}>
