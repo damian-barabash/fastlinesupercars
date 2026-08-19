@@ -23,8 +23,10 @@ function returnOrigin(raw?: string) {
   const o = (raw || '').replace(/\/$/, '')
   if (!o) return SITE
   if (o === SITE) return o
-  if (/^http:\/\/localhost(:\d+)?$/.test(o)) return o          // praca lokalna
-  if (/^https:\/\/[a-z0-9-]+\.github\.io$/i.test(o)) return o   // podgląd na GitHub Pages
+  // własna domena i jej subdomeny (draft.fastlinesupercars.pl, www., docelowo apex)
+  if (/^https:\/\/([a-z0-9-]+\.)*fastlinesupercars\.pl$/i.test(o)) return o
+  if (/^http:\/\/localhost(:\d+)?$/.test(o)) return o           // praca lokalna
+  if (/^https:\/\/[a-z0-9-]+\.github\.io$/i.test(o)) return o    // podgląd na GitHub Pages
   return SITE
 }
 
