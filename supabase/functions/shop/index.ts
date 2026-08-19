@@ -13,7 +13,20 @@ const NOTIFY_URL = `${SB_URL}/functions/v1/tpay-notify`
 
 type Item = { product_id: string; variant?: string; qty?: number }
 type Customer = { name: string; email: string; phone?: string }
-type CheckoutBody = { customer: Customer; gift_for?: string; items: Item[]; promo?: string }
+type CheckoutBody = { customer: Customer; gift_for?: string; items: Item[]; promo?: string; return_origin?: string }
+
+/**
+ * Adres powrotu z bramki. Bierzemy go z przeglądarki tylko wtedy, gdy jest na białej liście —
+ * inaczej ktoś mógłby podstawić własną stronę „potwierdzenia płatności".
+ */
+function returnOrigin(raw?: string) {
+  const o = (raw || '').replace(/\/$/, '')
+  if (!o) return SITE
+  if (o === SITE) return o
+  if (/^http:\/\/localhost(:\d+)?$/.test(o)) return o          // praca lokalna
+  if (/^https:\/\/[a-z0-9-]+\.github\.io$/i.test(o)) return o   // podgląd na GitHub Pages
+  return SITE
+}
 
 async function getPromo() {
   const rows = await db(`settings?key=in.(promo_code,promo_percent,promo_min_grosze)&select=key,value`)
@@ -98,6 +111,7 @@ async function checkout(body: CheckoutBody) {
   }
 
   try {
+    const back = returnOrigin(body.return_origin)
     const desc = `Fastline Supercars — zamówienie #${order.number}`
     const tx = await tpayCreateTransaction({
       amountGrosze: order.total,
@@ -107,8 +121,8 @@ async function checkout(body: CheckoutBody) {
       payerName: order.customer_name,
       payerPhone: order.customer_phone || undefined,
       notificationUrl: NOTIFY_URL,
-      successUrl: `${SITE}/dziekujemy?order=${order.id}`,
-      errorUrl: `${SITE}/dziekujemy?order=${order.id}&error=1`,
+      successUrl: `${back}/dziekujemy?order=${order.id}`,
+      errorUrl: `${back}/dziekujemy?order=${order.id}&error=1`,
     })
     await db(`orders?id=eq.${order.id}`, {
       method: 'PATCH',

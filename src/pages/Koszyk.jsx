@@ -126,6 +126,7 @@ export default function Koszyk() {
         gift_for: form.gift ? form.gift_for.trim() : '',
         items: items.map((i) => ({ product_id: i.product_id, variant: i.variant, qty: i.qty })),
         ...(promoState?.discount ? { promo: promo.trim() } : {}),
+        return_origin: window.location.origin,   // serwer i tak przyjmie tylko adres z białej listy
       })
       clearCart()
       if (d.payment_url) { window.location.assign(d.payment_url); return }
