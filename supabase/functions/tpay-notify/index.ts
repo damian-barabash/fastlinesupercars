@@ -79,8 +79,10 @@ Deno.serve(async (req) => {
     return FAIL(`niedopłata dla #${order.number}: ${trPaid} < ${(order.total / 100).toFixed(2)}`)
   }
 
-  if (order.tpay_id && trId && order.tpay_id !== trId)
-    console.warn(`tpay-notify: #${order.number} tr_id ${trId} ≠ zapisane ${order.tpay_id}`)
+  // UWAGA: w powiadomieniu `tr_id` to czytelny tytuł transakcji (TR-XXX-XXXXXXX),
+  // a nie ULID zwracany przy tworzeniu — porównujemy więc z `tpay_title`.
+  if (trId && order.tpay_title && order.tpay_title !== trId && order.tpay_id !== trId)
+    console.warn(`tpay-notify: #${order.number} tr_id ${trId} ≠ zapisane ${order.tpay_title} / ${order.tpay_id}`)
 
   try {
     const res = await fulfillOrder(order, paidGrosze)
