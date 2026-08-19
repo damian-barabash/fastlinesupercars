@@ -24,9 +24,16 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # `npm run build` = vite build + scripts/prerender.mjs (strony per trasa, przekierowania,
+      # sitemap i własny 404.html z noindex — dlatego NIE nadpisujemy tu 404.html kopią strony głównej)
       - run: npm run build
-      - name: SPA fallback (404.html)
-        run: cp dist/index.html dist/404.html
+      - name: Sprawdź, czy prerender wygenerował podstrony
+        run: |
+          test -f dist/oferta/index.html
+          test -f dist/produkt/porsche-911/index.html
+          test -f dist/sitemap.xml
+          test -f dist/404.html
+          grep -q "noindex" dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

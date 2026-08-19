@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
     if (action === 'order') return await getOrder(body)
     if (action === 'contact') return await contact(body)
     if (action === 'pay') return await payTest(body)
-    if (action === 'health') return J({ ok: true, tpay: tpayConfigured(), test_payments: TEST_PAYMENTS })
+    if (action === 'health') return J({ ok: true, tpay: tpayConfigured(), test_payments: TEST_PAYMENTS, site: SITE, notify: NOTIFY_URL })
     return J({ error: 'unknown action' }, 400)
   } catch (e) {
     console.error(e)
