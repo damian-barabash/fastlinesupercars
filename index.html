@@ -36,20 +36,20 @@
       }
       @keyframes fsStreak { to { transform: translateX(-90px); } }
 
-      .fs-stage { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 24px; }
+      .fs-stage { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 24px; }
 
       /* gantry startowy F1 — 5 par świateł */
       .fs-gantry { position: relative; display: flex; flex-direction: column; align-items: center; }
-      .fs-arm { width: min(320px, 74vw); height: 7px; background: linear-gradient(#3a3a42, #16161a); border-radius: 2px; }
+      .fs-arm { width: min(224px, 58vw); height: 5px; background: linear-gradient(#3a3a42, #16161a); border-radius: 2px; }
       .fs-arm::before, .fs-arm::after {
-        content: ''; position: absolute; top: 0; width: 7px; height: 26px; background: linear-gradient(#2a2a31, #131317);
+        content: ''; position: absolute; top: 0; width: 5px; height: 18px; background: linear-gradient(#2a2a31, #131317);
       }
       .fs-arm::before { left: 0; } .fs-arm::after { right: 0; }
-      .fs-lights { display: flex; gap: min(18px, 4vw); padding: 12px min(14px, 3vw) 0; }
-      .fs-col { display: flex; flex-direction: column; gap: 7px; padding: 7px 6px; background: #101014; border: 1px solid #212127; border-radius: 3px; }
+      .fs-lights { display: flex; gap: min(12px, 3.2vw); padding: 9px min(10px, 2.4vw) 0; }
+      .fs-col { display: flex; flex-direction: column; gap: 5px; padding: 5px 4px; background: #101014; border: 1px solid #212127; border-radius: 3px; }
       .fs-bulb {
-        width: min(20px, 4.6vw); height: min(20px, 4.6vw); border-radius: 50%;
-        background: #241012; box-shadow: inset 0 0 6px rgba(0,0,0,.9);
+        width: min(14px, 3.4vw); height: min(14px, 3.4vw); border-radius: 50%;
+        background: #241012; box-shadow: inset 0 0 5px rgba(0,0,0,.9);
         transition: background .12s ease, box-shadow .12s ease;
       }
       .fs-col.on .fs-bulb { background: #ff1a10; box-shadow: 0 0 16px rgba(255,26,16,.9), 0 0 42px rgba(255,26,16,.45), inset 0 0 6px rgba(255,180,170,.5); }
@@ -57,7 +57,7 @@
 
       /* wejście na <img>, drganie „na obrotach" na wrapperze — inaczej druga animacja
          zjada wypełnienie pierwszej i logo znika */
-      .fs-logo { display: block; width: min(280px, 64vw); height: auto; opacity: 0; animation: fsLogo .7s .1s cubic-bezier(.2,.8,.3,1) forwards; }
+      .fs-logo { display: block; width: min(186px, 46vw); height: auto; opacity: 0; animation: fsLogo .7s .1s cubic-bezier(.2,.8,.3,1) forwards; }
       @keyframes fsLogo { from { opacity: 0; transform: translateY(14px) scale(.94); } to { opacity: 1; transform: none; } }
       #fs-pre.fs-rev .fs-logo-wrap { animation: fsIdle .12s linear infinite; }
       @keyframes fsIdle { 50% { transform: translate3d(.6px, -.6px, 0); } }
@@ -65,7 +65,7 @@
       /* listwa shift-lights zamiast zwykłego paska postępu */
       .fs-rpm { display: flex; gap: 3px; }
       .fs-seg {
-        width: min(15px, 3.4vw); height: 9px; background: #17171c; transform: skewX(-22deg);
+        width: min(11px, 2.5vw); height: 7px; background: #17171c; transform: skewX(-22deg);
         transition: background .1s ease, box-shadow .1s ease;
       }
       .fs-seg.lit { background: #19e05c; box-shadow: 0 0 10px rgba(25,224,92,.55); }
@@ -73,40 +73,41 @@
       .fs-seg.lit.hot { background: #e10600; box-shadow: 0 0 12px rgba(225,6,0,.7); }
 
       .fs-meta {
-        display: flex; align-items: baseline; justify-content: space-between; gap: 18px;
-        width: min(320px, 74vw);
+        display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+        width: min(224px, 58vw);
         font-family: Poppins, system-ui, -apple-system, sans-serif;
-        font-size: 10.5px; font-weight: 600; letter-spacing: .26em; text-transform: uppercase; color: #6f6f7a;
+        font-size: 8.5px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: #6f6f7a;
       }
-      .fs-pct { font-family: 'Racing Sans One', Poppins, system-ui, sans-serif; font-style: italic; font-size: 19px; letter-spacing: .04em; color: #fff; }
+      .fs-pct { font-family: 'Racing Sans One', Poppins, system-ui, sans-serif; font-style: italic; font-size: 15px; letter-spacing: .04em; color: #fff; }
       #fs-pre.fs-go .fs-status { color: #19e05c; }
 
-      /* szachownica przelatująca na wyjściu */
-      .fs-flag {
+      /* karbonowa płyta przelatująca na wyjściu (czerwona krawędź, żeby ruch był czytelny) */
+      .fs-wipe {
         position: absolute; inset: 0; z-index: 3; opacity: 0; transform: translateY(100%);
-        background:
-          repeating-conic-gradient(#fff 0 25%, #0a0a0c 0 50%) 0 0 / 46px 46px;
+        background: #101013 url('/img/carbon-tex.webp') center / cover no-repeat;
+        border-top: 3px solid #e10600;
+        box-shadow: 0 -18px 50px rgba(225,6,0,.35);
       }
-      #fs-pre.fs-go .fs-flag { animation: fsFlag .62s cubic-bezier(.6,0,.2,1) forwards; }
-      @keyframes fsFlag {
-        0% { opacity: .95; transform: translateY(100%); }
-        55% { opacity: .95; transform: translateY(0); }
+      #fs-pre.fs-go .fs-wipe { animation: fsWipe .62s cubic-bezier(.6,0,.2,1) forwards; }
+      @keyframes fsWipe {
+        0% { opacity: 1; transform: translateY(100%); }
+        55% { opacity: 1; transform: translateY(0); }
         100% { opacity: 0; transform: translateY(-100%); }
       }
 
       @media (min-width: 900px) {
-        .fs-stage { gap: 34px; }
-        .fs-arm { width: 430px; }
-        .fs-lights { gap: 26px; padding-top: 14px; }
-        .fs-bulb { width: 26px; height: 26px; }
-        .fs-logo { width: 380px; }
-        .fs-seg { width: 20px; height: 12px; }
-        .fs-meta { width: 430px; font-size: 11.5px; }
-        .fs-pct { font-size: 24px; }
+        .fs-stage { gap: 22px; }
+        .fs-arm { width: 286px; }
+        .fs-lights { gap: 17px; padding-top: 11px; }
+        .fs-bulb { width: 17px; height: 17px; }
+        .fs-logo { width: 240px; }
+        .fs-seg { width: 13px; height: 8px; }
+        .fs-meta { width: 286px; font-size: 9.5px; }
+        .fs-pct { font-size: 18px; }
       }
 
       @media (prefers-reduced-motion: reduce) {
-        #fs-pre::before, .fs-flag { animation: none !important; }
+        #fs-pre::before, .fs-wipe { animation: none !important; }
         .fs-logo { animation: none; opacity: 1; }
       }
     </style>
@@ -122,7 +123,7 @@
         <div class="fs-rpm" id="fs-rpm"></div>
         <div class="fs-meta"><span class="fs-status" id="fs-status">Rozgrzewka</span><span class="fs-pct" id="fs-pct">0%</span></div>
       </div>
-      <div class="fs-flag"></div>
+      <div class="fs-wipe"></div>
     </div>
     <script>
       (function () {
