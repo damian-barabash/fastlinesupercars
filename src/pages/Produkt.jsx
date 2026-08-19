@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useProducts, productPrice } from '../lib/products.js'
 import { addToCart } from '../lib/cart.js'
+import { gtmAddToCart } from '../lib/gtm.js'
 import { zl } from '../lib/api.js'
 import { Reveal } from '../components/Reveal.jsx'
 import CarCard from '../components/CarCard.jsx'
@@ -32,7 +33,9 @@ export default function Produkt() {
   }
 
   function add(goCheckout) {
-    addToCart({ product_id: p.id, variant: p.variants?.length ? chosen : '', name: p.name })
+    const line = { product_id: p.id, variant: p.variants?.length ? chosen : '', name: p.name }
+    addToCart(line)
+    gtmAddToCart({ ...line, price, qty: 1 })
     setAdded(true)
     setTimeout(() => setAdded(false), 1800)
     if (goCheckout) nav('/koszyk')

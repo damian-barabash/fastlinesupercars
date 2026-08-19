@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useProducts } from '../lib/products.js'
 import { TORY } from '../data/tory.js'
 import { seoFor, SITE, DEFAULT_IMAGE } from '../data/seo.js'
+import { gtmPageView } from '../lib/gtm.js'
 
 // Statyczne pliki z `scripts/prerender.mjs` mają poprawne meta już przy wejściu,
 // ale przy nawigacji wewnątrz aplikacji tytuł i canonical trzeba podmienić ręcznie —
@@ -22,6 +23,9 @@ const meta = (attr, name, content) => {
 export default function SeoSync() {
   const { pathname } = useLocation()
   const products = useProducts()
+  // efekt powtarza się, gdy dojadą produkty z bazy — meta odświeżamy, ale odsłonę
+  // wysyłamy raz na adres, inaczej statystyki liczyłyby każdą wizytę podwójnie
+  const sentFor = useRef(null)
 
   useEffect(() => {
     const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : '/'
@@ -43,6 +47,11 @@ export default function SeoSync() {
       const l = document.createElement('link'); l.setAttribute('rel', 'canonical'); return l
     })
     link.setAttribute('href', url)
+
+    if (!path.startsWith('/admin') && sentFor.current !== path) {
+      sentFor.current = path
+      gtmPageView(path, seo.title)
+    }
   }, [pathname, products])
 
   return null

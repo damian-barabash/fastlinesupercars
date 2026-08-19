@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { shop } from '../lib/api.js'
+import { gtmPurchase } from '../lib/gtm.js'
 import './dziekujemy.css'
 
 // Powrót z bramki Tpay. Statusu płatności NIE ustala przeglądarka — pytamy serwer
@@ -34,7 +35,13 @@ export default function Dziekujemy() {
           const d = await shop('order', { order_id: orderId })
           setOrder(d)
           misses = 0
-          if (d.status === 'paid' && d.voucher?.code) { setPhase('paid'); return }
+          if (d.status === 'paid' && d.voucher?.code) {
+            setPhase('paid')
+            // jeden `purchase` na zamówienie, nawet po odświeżeniu strony
+            const key = `fs_gtm_purchase_${d.id}`
+            if (!sessionStorage.getItem(key)) { sessionStorage.setItem(key, '1'); gtmPurchase(d) }
+            return
+          }
           if (d.status === 'chargeback') { setPhase('failed'); return }
           // powrót z bramki z błędem — nie ma na co czekać
           if (isError) { setPhase('failed'); return }
