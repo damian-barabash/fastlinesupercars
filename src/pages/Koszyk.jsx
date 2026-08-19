@@ -42,6 +42,7 @@ export default function Koszyk() {
   const [promo, setPromo] = useState('')
   const [promoState, setPromoState] = useState(null) // {discount, percent} | {error}
   const [promoBusy, setPromoBusy] = useState(false)
+  const [payBusy, setPayBusy] = useState(false)
   const [pending, setPending] = useState(null)       // rabat w locie do kwoty
   const [fly, setFly] = useState(null)
   const promoRef = useRef(null)
@@ -112,17 +113,27 @@ export default function Koszyk() {
   const grandTotal = total - discount
   const shownTotal = useCountTo(grandTotal)
 
-  // Optimistic payment: navigate to /dziekujemy immediately; order+pay run there in background
-  function payNow() {
-    const payload = {
-      customer: { name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim() },
-      gift_for: form.gift ? form.gift_for.trim() : '',
-      items: items.map((i) => ({ product_id: i.product_id, variant: i.variant, qty: i.qty })),
-      ...(promoState?.discount ? { promo: promo.trim() } : {}),
+  // Płatność: serwer zakłada zamówienie (ceny liczy sam) i tworzy transakcję Tpay,
+  // my tylko przekierowujemy do bramki. Zamówienie zostaje `pending` do czasu
+  // potwierdzenia z Tpay (webhook) — nic nie jest opłacone „na słowo" przeglądarki.
+  async function payNow() {
+    if (payBusy) return
+    setErr('')
+    setPayBusy(true)
+    try {
+      const d = await shop('checkout', {
+        customer: { name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim() },
+        gift_for: form.gift ? form.gift_for.trim() : '',
+        items: items.map((i) => ({ product_id: i.product_id, variant: i.variant, qty: i.qty })),
+        ...(promoState?.discount ? { promo: promo.trim() } : {}),
+      })
+      clearCart()
+      if (d.payment_url) { window.location.assign(d.payment_url); return }
+      nav(`/dziekujemy?order=${d.order_id}${d.test_mode ? '&test=1' : ''}`)
+    } catch (e) {
+      setErr(e.message || 'Nie udało się rozpocząć płatności')
+      setPayBusy(false)
     }
-    sessionStorage.setItem('fs_pending_order', JSON.stringify(payload))
-    clearCart()
-    nav('/dziekujemy')
   }
 
   if (items.length === 0 && step === 0) {
@@ -307,11 +318,15 @@ export default function Koszyk() {
                   </p>
                 )}
                 <p className="muted" style={{ fontSize: 13 }}>
-                  Po kliknięciu „Zapłać" przetworzymy zamówienie i wygenerujemy Twój voucher.
+                  Po kliknięciu „Zapłać" przeniesiemy Cię do bezpiecznej bramki Tpay. Voucher PDF
+                  wyślemy na e-mail od razu po zaksięgowaniu płatności.
                 </p>
+                {err && <p className="koszyk-err">{err}</p>}
                 <div className="koszyk-actions">
-                  <button className="btn btn-ghost" onClick={() => goStep(2)}>← Wróć</button>
-                  <button className="btn btn-red koszyk-paybtn" onClick={payNow}>Zapłać {zl(grandTotal)}</button>
+                  <button className="btn btn-ghost" onClick={() => goStep(2)} disabled={payBusy}>← Wróć</button>
+                  <button className="btn btn-red koszyk-paybtn" onClick={payNow} disabled={payBusy}>
+                    {payBusy ? <><span className="koszyk-spin" /> Przekierowuję do Tpay…</> : `Zapłać ${zl(grandTotal)}`}
+                  </button>
                 </div>
               </Reveal>
             )}

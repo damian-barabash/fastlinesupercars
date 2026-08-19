@@ -432,6 +432,11 @@ function Orders() {
                         {o.gift_for && <div>Prezent dla: <b>{o.gift_for}</b></div>}
                         {(o.items || []).map((it, i) => <div key={i}>· {it.qty}× {it.name} {it.variant}</div>)}
                         {o.notes && <div>{o.notes}</div>}
+                        {o.tpay_title && <div>Tpay: <b>{o.tpay_title}</b>{o.paid_amount ? ` · wpłacono ${zl(o.paid_amount)}` : ''}</div>}
+                        {o.payment_error && <div className="adm-order-err">Płatność: {o.payment_error}</div>}
+                        {o.status === 'pending' && o.payment_url && (
+                          <div><a className="adm-link" href={o.payment_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>Link do płatności</a></div>
+                        )}
                       </div>
                     )}
                   </td>

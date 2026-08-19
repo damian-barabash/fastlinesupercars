@@ -1,182 +1,19 @@
-// FASTLINESUPERCARS — shop edge function
-// Actions: createOrder | pay (stub → paid + voucher PDF + emails) | order | contact
-import { PDFDocument, rgb } from 'https://esm.sh/pdf-lib@1.17.1'
-import fontkit from 'https://esm.sh/@pdf-lib/fontkit@1.1.1'
+// FASTLINESUPERCARS — publiczna funkcja sklepu.
+// Akcje: checkout (zamówienie + transakcja Tpay) | checkPromo | order (status) | contact
+//        pay — WYŁĄCZNIE tryb testowy, za flagą SHOP_TEST_PAYMENTS=1
+//
+// Zasada: ceny liczy serwer z tabeli `products`. Klient przysyła tylko id produktu,
+// wariant i sztuki — dzięki temu nowy produkt dodany w panelu działa od razu,
+// a przesłanej z przeglądarki kwoty nie ma jak podrobić.
+import { CORS, J, db, esc, SITE, SB_URL, CONTACT_TO, sendMail, mailShell, fulfillOrder } from '../_shared/core.ts'
+import { tpayConfigured, tpayCreateTransaction } from '../_shared/tpay.ts'
 
-const SB_URL = Deno.env.get('SUPABASE_URL')!
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const RESEND_KEY = Deno.env.get('RESEND_KEY') ?? ''
-const FROM = Deno.env.get('SHOP_FROM_EMAIL') ?? 'Fastline Supercars <rezerwacja@fastlinesupercars.pl>'
-const CONTACT_TO = 'rezerwacje@fastlinesupercars.pl'
-const SITE = 'https://fastlinesupercars.pl'
+const TEST_PAYMENTS = Deno.env.get('SHOP_TEST_PAYMENTS') === '1'
+const NOTIFY_URL = `${SB_URL}/functions/v1/tpay-notify`
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-const J = (d: unknown, s = 200) =>
-  new Response(JSON.stringify(d), { status: s, headers: { ...CORS, 'Content-Type': 'application/json' } })
-
-async function db(path: string, init: RequestInit = {}) {
-  const r = await fetch(`${SB_URL}/rest/v1/${path}`, {
-    ...init,
-    headers: {
-      apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`,
-      'Content-Type': 'application/json', Prefer: 'return=representation',
-      ...(init.headers || {}),
-    },
-  })
-  if (!r.ok) throw new Error(`db ${path}: ${r.status} ${await r.text()}`)
-  const t = await r.text()
-  return t ? JSON.parse(t) : null
-}
-
-async function storageGet(path: string): Promise<ArrayBuffer> {
-  const r = await fetch(`${SB_URL}/storage/v1/object/vouchery/${path}`, {
-    headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY },
-  })
-  if (!r.ok) throw new Error(`storage get ${path}: ${r.status} ${(await r.text()).slice(0, 200)}`)
-  return await r.arrayBuffer()
-}
-
-async function storagePut(path: string, body: Uint8Array, type: string) {
-  const r = await fetch(`${SB_URL}/storage/v1/object/vouchery/${path}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, 'Content-Type': type, 'x-upsert': 'true' },
-    body,
-  })
-  if (!r.ok) throw new Error(`storage put ${path}: ${r.status} ${await r.text()}`)
-}
-
-function voucherCode() {
-  const chars = 'ABCDEFGHJKLMNPRSTUWXYZ23456789'
-  const rnd = crypto.getRandomValues(new Uint8Array(8))
-  let s = ''
-  for (let i = 0; i < 8; i++) { if (i === 4) s += '-'; s += chars[rnd[i] % chars.length] }
-  return `FS-${s}`
-}
-
-const zl = (g: number) => (g / 100).toLocaleString('pl-PL', { minimumFractionDigits: 2 }) + ' zł'
-const b64 = (u8: Uint8Array) => {
-  let bin = ''
-  const chunk = 0x8000
-  for (let i = 0; i < u8.length; i += chunk) bin += String.fromCharCode(...u8.subarray(i, i + chunk))
-  return btoa(bin)
-}
-
-// ---------- PDF ----------
-// Layout: fractions of image size; x = text center, y = top of text, size = of height.
-const DEFAULT_LAYOUT = {
-  name: { x: 0.235, y: 0.335, size: 0.085, maxW: 0.40 },
-  items: { x: 0.235, y: 0.575, size: 0.048, maxW: 0.42, gap: 0.062 },
-  valid: { x: 0.792, y: 0.908, size: 0.030 },
-  code: { x: 0.792, y: 0.9515, size: 0.030 },
-}
-type Layout = typeof DEFAULT_LAYOUT
-
-async function makeVoucherPdf(opts: {
-  template: string; recipient: string; lines: string[]; validUntil: string; code: string; layout?: Partial<Layout>
-}): Promise<Uint8Array> {
-  const [jpgBuf, fontSemi, fontBold] = await Promise.all([
-    storageGet(opts.template),
-    storageGet('assets/Oswald-SemiBold.ttf'),
-    storageGet('assets/Oswald-Bold.ttf'),
-  ])
-  const pdf = await PDFDocument.create()
-  pdf.registerFontkit(fontkit)
-  const [semi, bold] = await Promise.all([pdf.embedFont(fontSemi), pdf.embedFont(fontBold)])
-  const img = await pdf.embedJpg(jpgBuf)
-  const SCALE = 0.25
-  const W = img.width * SCALE, H = img.height * SCALE
-  const page = pdf.addPage([W, H])
-  page.drawImage(img, { x: 0, y: 0, width: W, height: H })
-
-  const white = rgb(1, 1, 1)
-  const L: Layout = {
-    name: { ...DEFAULT_LAYOUT.name, ...(opts.layout?.name || {}) },
-    items: { ...DEFAULT_LAYOUT.items, ...(opts.layout?.items || {}) },
-    valid: { ...DEFAULT_LAYOUT.valid, ...(opts.layout?.valid || {}) },
-    code: { ...DEFAULT_LAYOUT.code, ...(opts.layout?.code || {}) },
-  }
-
-  const fitSize = (text: string, font: typeof bold, want: number, maxW: number) => {
-    let s = want
-    while (s > 8 && font.widthOfTextAtSize(text, s) > maxW) s -= 1
-    return s
-  }
-  // x = center fraction, top = top-of-text fraction (editor coordinates)
-  const drawAt = (text: string, cx: number, top: number, font: typeof bold, size: number) => {
-    const w = font.widthOfTextAtSize(text, size)
-    page.drawText(text, { x: cx * W - w / 2, y: H - top * H - size, size, font, color: white })
-  }
-
-  // Recipient name — under "DLA"
-  const name = opts.recipient.toUpperCase()
-  const nameSize = fitSize(name, bold, H * L.name.size, W * L.name.maxW)
-  drawAt(name, L.name.x, L.name.y, bold, nameSize)
-
-  // Purchased items list
-  let top = L.items.y
-  for (const raw of opts.lines.slice(0, 5)) {
-    const line = raw.toUpperCase()
-    const s = fitSize(line, semi, H * L.items.size, W * L.items.maxW)
-    drawAt(line, L.items.x, top, semi, s)
-    top += L.items.gap
-  }
-
-  // Ważność + kod
-  drawAt(`Ważność: ${opts.validUntil}`, L.valid.x, L.valid.y, semi, H * L.valid.size)
-  drawAt(`Kod vouchera: ${opts.code}`, L.code.x, L.code.y, semi, H * L.code.size)
-
-  return await pdf.save()
-}
-
-// ---------- emails ----------
-async function sendMail(
-  to: string, subject: string, html: string,
-  attachments?: { filename: string; content: string }[],
-  replyTo?: string,
-): Promise<{ ok: boolean; err?: string }> {
-  if (!RESEND_KEY) { console.error('resend: brak RESEND_KEY'); return { ok: false, err: 'no-key' } }
-  try {
-    const r = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: FROM, to: [to], subject, html, attachments, ...(replyTo ? { reply_to: replyTo } : {}) }),
-    })
-    const txt = await r.text()
-    if (!r.ok) { console.error('resend fail', r.status, txt); return { ok: false, err: `${r.status} ${txt.slice(0, 200)}` } }
-    return { ok: true }
-  } catch (e) {
-    console.error('resend throw', e)
-    return { ok: false, err: String(e) }
-  }
-}
-
-const mailShell = (inner: string) => `
-<div style="margin:0;padding:0;background:#0d0d0f;font-family:Arial,Helvetica,sans-serif">
- <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0f;padding:24px 0">
-  <tr><td align="center">
-   <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
-    <tr><td style="background:#c8102e;height:6px;font-size:0">&nbsp;</td></tr>
-    <tr><td style="background:#131316;padding:28px 36px">
-      <img src="${SB_URL}/storage/v1/object/public/media/brand/logo-grey.png" alt="Fastline Supercars" width="190" style="display:block;width:190px;height:auto" />
-      <div style="color:#8a8a92;font-size:11px;letter-spacing:3px;margin-top:10px">#SPORTDRIVINGEXPERIENCE</div>
-    </td></tr>
-    <tr><td style="background:#1a1a1e;padding:36px">${inner}</td></tr>
-    <tr><td style="background:#131316;padding:20px 36px;color:#8a8a92;font-size:12px;line-height:1.7">
-      rezerwacje@fastlinesupercars.pl · pon–pt 10:00–17:00<br>
-      © ${new Date().getFullYear()} Fastlinesupercars.pl
-    </td></tr>
-    <tr><td style="background:#c8102e;height:6px;font-size:0">&nbsp;</td></tr>
-   </table>
-  </td></tr>
- </table>
-</div>`
-
-// ---------- actions ----------
 type Item = { product_id: string; variant?: string; qty?: number }
+type Customer = { name: string; email: string; phone?: string }
+type CheckoutBody = { customer: Customer; gift_for?: string; items: Item[]; promo?: string }
 
 async function getPromo() {
   const rows = await db(`settings?key=in.(promo_code,promo_percent,promo_min_grosze)&select=key,value`)
@@ -185,53 +22,104 @@ async function getPromo() {
   return { code: (m.promo_code || '').trim(), percent: +(m.promo_percent || 0), min: +(m.promo_min_grosze || 0) }
 }
 
-async function createOrder(body: { customer: { name: string; email: string; phone?: string }; gift_for?: string; items: Item[]; promo?: string }) {
+type Line = { product_id: string; name: string; variant: string; price: number; qty: number }
+type Built = { error?: Response; lines?: Line[]; subtotal?: number; discount?: number; promoUsed?: string; total?: number }
+
+/** Buduje pozycje zamówienia i sumę na podstawie aktualnych danych z bazy. */
+async function buildOrder(body: CheckoutBody): Promise<Built> {
   const { customer, items } = body
-  if (!customer?.name || !customer?.email || !/.+@.+\..+/.test(customer.email)) return J({ error: 'Nieprawidłowe dane klienta' }, 400)
-  if (!Array.isArray(items) || !items.length) return J({ error: 'Pusty koszyk' }, 400)
+  if (!customer?.name?.trim() || !customer?.email || !/.+@.+\..+/.test(customer.email))
+    return { error: J({ error: 'Nieprawidłowe dane klienta' }, 400) }
+  if (!Array.isArray(items) || !items.length) return { error: J({ error: 'Pusty koszyk' }, 400) }
+  if (items.length > 20) return { error: J({ error: 'Za dużo pozycji w koszyku' }, 400) }
+
   const prods = await db(`products?select=*&active=eq.true`)
   const lines: { product_id: string; name: string; variant: string; price: number; qty: number }[] = []
   for (const it of items) {
     const p = prods.find((x: { id: string }) => x.id === it.product_id)
-    if (!p) return J({ error: `Nieznany produkt: ${it.product_id}` }, 400)
-    const qty = Math.min(Math.max(1, it.qty || 1), 10)
+    if (!p) return { error: J({ error: `Nieznany produkt: ${it.product_id}` }, 400) }
+    const qty = Math.min(Math.max(1, Math.floor(Number(it.qty) || 1)), 10)
     let price = p.price_from, variant = ''
     if (Array.isArray(p.variants) && p.variants.length) {
       const v = p.variants.find((v: { laps: string }) => v.laps === it.variant) || null
-      if (!v) return J({ error: `Wybierz liczbę okrążeń dla: ${p.name}` }, 400)
+      if (!v) return { error: J({ error: `Wybierz liczbę okrążeń dla: ${p.name}` }, 400) }
       price = v.price; variant = v.laps
     }
+    if (!Number.isFinite(price) || price <= 0)
+      return { error: J({ error: `Produkt bez ceny: ${p.name}` }, 400) }
     lines.push({ product_id: p.id, name: p.name, variant, price, qty })
   }
   const subtotal = lines.reduce((s, l) => s + l.price * l.qty, 0)
 
-  // promo code (e.g. FAST = -10% for orders >= 500 zł)
   let discount = 0, promoUsed = ''
   if (body.promo) {
     const promo = await getPromo()
     if (promo.code && body.promo.trim().toUpperCase() === promo.code.toUpperCase() && promo.percent > 0) {
-      if (subtotal >= promo.min) {
-        discount = Math.round(subtotal * promo.percent / 100)
-        promoUsed = promo.code.toUpperCase()
-      } else {
-        return J({ error: `Kod ${promo.code} działa od ${(promo.min / 100).toFixed(0)} zł` }, 400)
-      }
+      if (subtotal < promo.min) return { error: J({ error: `Kod ${promo.code} działa od ${(promo.min / 100).toFixed(0)} zł` }, 400) }
+      discount = Math.round(subtotal * promo.percent / 100)
+      promoUsed = promo.code.toUpperCase()
     } else {
-      return J({ error: 'Nieprawidłowy kod rabatowy' }, 400)
+      return { error: J({ error: 'Nieprawidłowy kod rabatowy' }, 400) }
     }
   }
   const total = subtotal - discount
+  if (total <= 0) return { error: J({ error: 'Nieprawidłowa kwota zamówienia' }, 400) }
+  return { lines, subtotal, discount, promoUsed, total }
+}
+
+/** Zamówienie + transakcja Tpay. Zwraca link do płatności — front tylko przekierowuje. */
+async function checkout(body: CheckoutBody) {
+  const built = await buildOrder(body)
+  if (built.error) return built.error
+
+  // prosty hamulec: jeden adres nie zakłada dziesiątek zamówień w kilka minut
+  const since = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+  const recent = await db(`orders?customer_email=eq.${encodeURIComponent(body.customer.email.trim())}&created_at=gte.${since}&select=id`)
+  if ((recent?.length || 0) >= 10) return J({ error: 'Zbyt wiele prób płatności. Spróbuj za kilka minut.' }, 429)
 
   const [order] = await db('orders', {
     method: 'POST',
     body: JSON.stringify({
-      customer_name: customer.name.trim(), customer_email: customer.email.trim(),
-      customer_phone: (customer.phone || '').trim(), gift_for: (body.gift_for || '').trim(),
-      items: lines, total, status: 'pending',
-      notes: promoUsed ? `promo:${promoUsed} -${(discount / 100).toFixed(2)} zł` : '',
+      customer_name: body.customer.name.trim(), customer_email: body.customer.email.trim(),
+      customer_phone: (body.customer.phone || '').trim(), gift_for: (body.gift_for || '').trim(),
+      items: built.lines, total: built.total, status: 'pending',
+      notes: built.promoUsed ? `promo:${built.promoUsed} -${(built.discount! / 100).toFixed(2)} zł` : '',
     }),
   })
-  return J({ order_id: order.id, number: order.number, total, subtotal, discount, promo: promoUsed })
+
+  // Tryb testowy (sekret SHOP_TEST_PAYMENTS=1) omija bramkę — w produkcji musi być wyłączony.
+  if (TEST_PAYMENTS) {
+    console.warn('checkout: TRYB TESTOWY — zamówienie bez realnej płatności')
+    return J({ order_id: order.id, number: order.number, total: order.total, test_mode: true })
+  }
+  if (!tpayConfigured()) {
+    console.error('checkout: brak konfiguracji Tpay')
+    return J({ error: 'Płatności online są chwilowo niedostępne. Napisz do nas: ' + CONTACT_TO }, 503)
+  }
+
+  try {
+    const desc = `Fastline Supercars — zamówienie #${order.number}`
+    const tx = await tpayCreateTransaction({
+      amountGrosze: order.total,
+      description: desc,
+      hiddenDescription: order.id,          // wraca jako tr_crc w powiadomieniu
+      payerEmail: order.customer_email,
+      payerName: order.customer_name,
+      payerPhone: order.customer_phone || undefined,
+      notificationUrl: NOTIFY_URL,
+      successUrl: `${SITE}/dziekujemy?order=${order.id}`,
+      errorUrl: `${SITE}/dziekujemy?order=${order.id}&error=1`,
+    })
+    await db(`orders?id=eq.${order.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ tpay_id: tx.transactionId, tpay_title: tx.title, payment_url: tx.transactionPaymentUrl }),
+    })
+    return J({ order_id: order.id, number: order.number, total: order.total, payment_url: tx.transactionPaymentUrl })
+  } catch (e) {
+    console.error('checkout: tpay', e)
+    await db(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ payment_error: String(e).slice(0, 300) }) })
+    return J({ error: 'Nie udało się rozpocząć płatności. Spróbuj ponownie lub napisz: ' + CONTACT_TO }, 502)
+  }
 }
 
 async function checkPromo(body: { promo: string; subtotal: number }) {
@@ -243,106 +131,29 @@ async function checkPromo(body: { promo: string; subtotal: number }) {
   return J({ valid: true, percent: promo.percent, discount: Math.round((body.subtotal || 0) * promo.percent / 100) })
 }
 
-async function pay(body: { order_id: string }) {
-  const orders = await db(`orders?id=eq.${body.order_id}&select=*`)
-  const order = orders?.[0]
+/** Tryb testowy — bez płatności. Domyślnie wyłączony; w produkcji NIE włączać. */
+async function payTest(body: { order_id: string }) {
+  if (!TEST_PAYMENTS) return J({ error: 'not allowed' }, 403)
+  const order = (await db(`orders?id=eq.${body.order_id}&select=*`))?.[0]
   if (!order) return J({ error: 'Nie znaleziono zamówienia' }, 404)
-  if (order.status === 'paid') {
-    const v = order.voucher_id ? (await db(`vouchers?id=eq.${order.voucher_id}&select=code,valid_until`))?.[0] : null
-    return J({ status: 'paid', voucher_code: v?.code, valid_until: v?.valid_until })
-  }
-
-  // voucher: template of FIRST cart item, all purchases listed
-  const prods = await db('products?select=id,name,voucher_template')
-  const first = prods.find((p: { id: string }) => p.id === order.items[0].product_id)
-  const template = first?.voucher_template || 'templates/alpine-a110.jpg'
-  const code = voucherCode()
-  const valid = new Date(); valid.setFullYear(valid.getFullYear() + 1)
-  const validISO = valid.toISOString().slice(0, 10)
-  const validPL = validISO.split('-').reverse().join('.')
-  const recipient = order.gift_for || order.customer_name
-  const lines = order.items.map((it: { name: string; variant: string; qty: number }) =>
-    `${it.qty > 1 ? it.qty + '× ' : ''}${it.name}${it.variant ? ' — ' + it.variant : ''}`)
-
-  let pdfPath = '', pdfBytes: Uint8Array | null = null
-  try {
-    const tpl = (await db(`voucher_templates?path=eq.${encodeURIComponent(template)}&select=layout`))?.[0]
-    pdfBytes = await makeVoucherPdf({ template, recipient, lines, validUntil: validPL, code, layout: tpl?.layout })
-    pdfPath = `pdf/${code}.pdf`
-    await storagePut(pdfPath, pdfBytes, 'application/pdf')
-  } catch (e) {
-    console.error('pdf fail', e)
-  }
-
-  const [voucher] = await db('vouchers', {
-    method: 'POST',
-    body: JSON.stringify({
-      code, order_id: order.id, recipient, items_text: lines.join('\n'),
-      template, pdf_path: pdfPath, valid_until: validISO, status: 'active',
-    }),
-  })
-  await db(`orders?id=eq.${order.id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status: 'paid', paid_at: new Date().toISOString(), voucher_id: voucher.id }),
-  })
-
-  const itemsRows = order.items.map((it: { name: string; variant: string; price: number; qty: number }) => `
-    <tr>
-      <td style="padding:10px 0;color:#fff;font-size:14px;border-bottom:1px solid #2a2a30">${it.qty}× ${it.name}${it.variant ? ` <span style="color:#8a8a92">· ${it.variant}</span>` : ''}</td>
-      <td style="padding:10px 0;color:#fff;font-size:14px;border-bottom:1px solid #2a2a30" align="right">${zl(it.price * it.qty)}</td>
-    </tr>`).join('')
-
-  const html = mailShell(`
-    <div style="color:#c8102e;font-size:12px;letter-spacing:3px;font-weight:bold">POTWIERDZENIE ZAKUPU</div>
-    <h1 style="color:#fff;font-size:24px;margin:10px 0 4px">Dziękujemy, ${order.customer_name.split(' ')[0]}!</h1>
-    <p style="color:#b9b9c0;font-size:14px;line-height:1.7;margin:12px 0 24px">
-      Twoje zamówienie <b style="color:#fff">#${order.number}</b> zostało opłacone.
-      W załączniku znajdziesz <b style="color:#fff">voucher PDF</b> — gotowy do wydruku lub podarowania.
-    </p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsRows}
-      <tr><td style="padding:14px 0;color:#8a8a92;font-size:13px;letter-spacing:1px">RAZEM</td>
-      <td style="padding:14px 0;color:#fff;font-size:20px;font-weight:bold" align="right">${zl(order.total)}</td></tr>
-    </table>
-    <div style="background:#131316;border:1px solid #2a2a30;padding:18px 22px;margin:8px 0 24px">
-      <div style="color:#8a8a92;font-size:11px;letter-spacing:2px">KOD VOUCHERA</div>
-      <div style="color:#fff;font-size:26px;font-weight:bold;letter-spacing:4px;margin-top:4px">${code}</div>
-      <div style="color:#8a8a92;font-size:12px;margin-top:6px">Ważny do: <span style="color:#fff">${validPL}</span></div>
-    </div>
-    <p style="color:#b9b9c0;font-size:14px;line-height:1.7">Następny krok — zarezerwuj termin przejazdu:</p>
-    <a href="${SITE}/kalendarz" style="display:inline-block;background:#c8102e;color:#fff;text-decoration:none;font-weight:bold;letter-spacing:2px;font-size:14px;padding:14px 34px">ZAREZERWUJ TERMIN</a>
-  `)
-
-  const attachments = pdfBytes ? [{ filename: `Voucher-${code}.pdf`, content: b64(pdfBytes) }] : undefined
-  const sent = await sendMail(order.customer_email, `Voucher ${code} — potwierdzenie zakupu #${order.number}`, html, attachments)
-
-  // kopia dla biura — każde opłacone zamówienie ląduje w skrzynce rezerwacji
-  await sendMail(CONTACT_TO, `Nowe zamówienie #${order.number} — ${order.customer_name} (${zl(order.total)})`, mailShell(`
-    <div style="color:#c8102e;font-size:12px;letter-spacing:3px;font-weight:bold">NOWE ZAMÓWIENIE</div>
-    <h1 style="color:#fff;font-size:20px;margin:10px 0">#${order.number} · ${zl(order.total)}</h1>
-    <p style="color:#b9b9c0;font-size:14px;line-height:1.8">
-      Klient: <b style="color:#fff">${order.customer_name}</b><br>
-      E-mail: ${order.customer_email}${order.customer_phone ? `<br>Tel: ${order.customer_phone}` : ''}
-      ${order.gift_for ? `<br>Voucher dla: <b style="color:#fff">${order.gift_for}</b>` : ''}
-      ${order.notes ? `<br>${order.notes}` : ''}
-    </p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsRows}</table>
-    <div style="color:#8a8a92;font-size:13px;margin-top:18px">Kod vouchera: <b style="color:#fff">${code}</b> · ważny do ${validPL}</div>
-    ${sent.ok ? '' : '<div style="color:#ff6b6b;font-size:13px;margin-top:10px">UWAGA: e-mail do klienta nie został wysłany!</div>'}
-  `), attachments)
-
-  return J({ status: 'paid', voucher_code: code, valid_until: validISO, mail_sent: sent.ok })
+  const res = await fulfillOrder(order, order.total)
+  return J({ status: 'paid', voucher_code: res.code, valid_until: res.valid_until, test_mode: true })
 }
 
+/** Status zamówienia — używane przez stronę „Dziękujemy" (id zamówienia = UUID, nie do zgadnięcia). */
 async function getOrder(body: { order_id: string }) {
-  const o = (await db(`orders?id=eq.${body.order_id}&select=id,number,status,total,items,customer_name,voucher_id`))?.[0]
+  if (!/^[0-9a-f-]{36}$/i.test(body.order_id || '')) return J({ error: 'not found' }, 404)
+  const o = (await db(`orders?id=eq.${body.order_id}&select=id,number,status,total,items,customer_name,customer_email,voucher_id,payment_url`))?.[0]
   if (!o) return J({ error: 'not found' }, 404)
   let voucher = null
   if (o.voucher_id) voucher = (await db(`vouchers?id=eq.${o.voucher_id}&select=code,valid_until,status`))?.[0]
-  return J({ ...o, voucher })
+  return J({
+    id: o.id, number: o.number, status: o.status, total: o.total, items: o.items,
+    customer_name: o.customer_name, customer_email: o.customer_email,
+    payment_url: o.status === 'pending' ? o.payment_url : null,
+    voucher,
+  })
 }
-
-const esc = (s: string) =>
-  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 async function contact(body: { name: string; email: string; phone?: string; message: string }) {
   if (!body?.name || !body?.email || !body?.message) return J({ error: 'Uzupełnij wszystkie pola' }, 400)
@@ -363,11 +174,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
     const { action, ...body } = await req.json()
-    if (action === 'createOrder') return await createOrder(body)
+    if (action === 'checkout') return await checkout(body)
+    if (action === 'createOrder') return await checkout(body)   // stara nazwa = ta sama ścieżka
     if (action === 'checkPromo') return await checkPromo(body)
-    if (action === 'pay') return await pay(body)
     if (action === 'order') return await getOrder(body)
     if (action === 'contact') return await contact(body)
+    if (action === 'pay') return await payTest(body)
+    if (action === 'health') return J({ ok: true, tpay: tpayConfigured(), test_payments: TEST_PAYMENTS })
     return J({ error: 'unknown action' }, 400)
   } catch (e) {
     console.error(e)

@@ -171,6 +171,7 @@
 .adm-row-click { cursor: pointer; }
 .adm-row-click:hover td { background: #fafafc; }
 .adm-order-detail { margin-top: 8px; color: #7a7a84; font-size: 12.5px; display: flex; flex-direction: column; gap: 2px; }
+.adm-order-err { color: #c8102e; }
 
 /* badges */
 .adm-badge {
