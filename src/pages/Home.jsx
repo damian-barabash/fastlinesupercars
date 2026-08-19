@@ -28,7 +28,7 @@ export default function Home() {
     <main>
       {/* HERO — original Maserati banner with FAST -10% promo */}
       <section className="hero">
-        <Img k="img.hero" alt="Zarezerwuj swoją przejażdżkę marzeń — Maserati MC20 na torze. 10% zniżki z kodem FAST na zakupy powyżej 500 zł" className="hero-img" fetchPriority="high" />
+        <Img k="img.hero" alt="Zarezerwuj swoją przejażdżkę marzeń — Maserati MC20 na torze. 10% zniżki z kodem FAST na zakupy powyżej 500 zł" className="hero-img" fetchpriority="high" />
         <div className="hero-overlay wrap">
           <div className="hero-ctas">
             <Link to="/oferta" className="btn btn-red hero-btn">Wybierz auto&nbsp;&nbsp;»</Link>

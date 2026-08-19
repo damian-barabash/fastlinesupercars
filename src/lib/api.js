@@ -37,5 +37,9 @@ export async function adminApi(action, body = {}) {
   return d
 }
 
-export const zl = (grosze) =>
-  (grosze / 100).toLocaleString('pl-PL', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' zł'
+// pełne grosze pokazujemy zawsze dwucyfrowo: 2158,20 zł (nie 2158,2 zł)
+export const zl = (grosze) => {
+  const v = (grosze || 0) / 100
+  const dec = Number.isInteger(v) ? 0 : 2
+  return v.toLocaleString('pl-PL', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + ' zł'
+}

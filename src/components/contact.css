@@ -23,3 +23,10 @@
   clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
 }
 @media (max-width: 900px) { .contact-grid { grid-template-columns: 1fr; } .contact-form-row { grid-template-columns: 1fr; } }
+@media (max-width: 560px) {
+  .contact-info { padding: 26px 22px; }
+  /* adres nie może wychodzić poza ciemny kafelek na wąskim ekranie */
+  .contact-mail { font-size: 16px; width: auto; overflow-wrap: anywhere; }
+  .contact-form { padding: 24px 20px; }
+  .contact-form .btn { align-self: stretch; }
+}

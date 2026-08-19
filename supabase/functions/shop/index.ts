@@ -133,14 +133,25 @@ async function makeVoucherPdf(opts: {
 }
 
 // ---------- emails ----------
-async function sendMail(to: string, subject: string, html: string, attachments?: { filename: string; content: string }[]) {
-  if (!RESEND_KEY) return
-  const r = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: FROM, to: [to], subject, html, attachments }),
-  })
-  if (!r.ok) console.error('resend fail', r.status, await r.text())
+async function sendMail(
+  to: string, subject: string, html: string,
+  attachments?: { filename: string; content: string }[],
+  replyTo?: string,
+): Promise<{ ok: boolean; err?: string }> {
+  if (!RESEND_KEY) { console.error('resend: brak RESEND_KEY'); return { ok: false, err: 'no-key' } }
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: FROM, to: [to], subject, html, attachments, ...(replyTo ? { reply_to: replyTo } : {}) }),
+    })
+    const txt = await r.text()
+    if (!r.ok) { console.error('resend fail', r.status, txt); return { ok: false, err: `${r.status} ${txt.slice(0, 200)}` } }
+    return { ok: true }
+  } catch (e) {
+    console.error('resend throw', e)
+    return { ok: false, err: String(e) }
+  }
 }
 
 const mailShell = (inner: string) => `
@@ -302,9 +313,24 @@ async function pay(body: { order_id: string }) {
   `)
 
   const attachments = pdfBytes ? [{ filename: `Voucher-${code}.pdf`, content: b64(pdfBytes) }] : undefined
-  await sendMail(order.customer_email, `Voucher ${code} — potwierdzenie zakupu #${order.number}`, html, attachments)
+  const sent = await sendMail(order.customer_email, `Voucher ${code} — potwierdzenie zakupu #${order.number}`, html, attachments)
 
-  return J({ status: 'paid', voucher_code: code, valid_until: validISO })
+  // kopia dla biura — każde opłacone zamówienie ląduje w skrzynce rezerwacji
+  await sendMail(CONTACT_TO, `Nowe zamówienie #${order.number} — ${order.customer_name} (${zl(order.total)})`, mailShell(`
+    <div style="color:#c8102e;font-size:12px;letter-spacing:3px;font-weight:bold">NOWE ZAMÓWIENIE</div>
+    <h1 style="color:#fff;font-size:20px;margin:10px 0">#${order.number} · ${zl(order.total)}</h1>
+    <p style="color:#b9b9c0;font-size:14px;line-height:1.8">
+      Klient: <b style="color:#fff">${order.customer_name}</b><br>
+      E-mail: ${order.customer_email}${order.customer_phone ? `<br>Tel: ${order.customer_phone}` : ''}
+      ${order.gift_for ? `<br>Voucher dla: <b style="color:#fff">${order.gift_for}</b>` : ''}
+      ${order.notes ? `<br>${order.notes}` : ''}
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsRows}</table>
+    <div style="color:#8a8a92;font-size:13px;margin-top:18px">Kod vouchera: <b style="color:#fff">${code}</b> · ważny do ${validPL}</div>
+    ${sent.ok ? '' : '<div style="color:#ff6b6b;font-size:13px;margin-top:10px">UWAGA: e-mail do klienta nie został wysłany!</div>'}
+  `), attachments)
+
+  return J({ status: 'paid', voucher_code: code, valid_until: validISO, mail_sent: sent.ok })
 }
 
 async function getOrder(body: { order_id: string }) {
@@ -315,15 +341,21 @@ async function getOrder(body: { order_id: string }) {
   return J({ ...o, voucher })
 }
 
+const esc = (s: string) =>
+  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
 async function contact(body: { name: string; email: string; phone?: string; message: string }) {
   if (!body?.name || !body?.email || !body?.message) return J({ error: 'Uzupełnij wszystkie pola' }, 400)
+  if (!/.+@.+\..+/.test(body.email)) return J({ error: 'Nieprawidłowy adres e-mail' }, 400)
+  const name = esc(body.name).slice(0, 200)
   const html = mailShell(`
     <div style="color:#c8102e;font-size:12px;letter-spacing:3px;font-weight:bold">FORMULARZ KONTAKTOWY</div>
-    <h1 style="color:#fff;font-size:20px;margin:10px 0">Wiadomość od: ${body.name}</h1>
-    <p style="color:#b9b9c0;font-size:14px">E-mail: ${body.email}${body.phone ? ` · Tel: ${body.phone}` : ''}</p>
-    <p style="color:#fff;font-size:14px;line-height:1.8;white-space:pre-wrap">${body.message.slice(0, 4000)}</p>
+    <h1 style="color:#fff;font-size:20px;margin:10px 0">Wiadomość od: ${name}</h1>
+    <p style="color:#b9b9c0;font-size:14px">E-mail: ${esc(body.email)}${body.phone ? ` · Tel: ${esc(body.phone)}` : ''}</p>
+    <p style="color:#fff;font-size:14px;line-height:1.8;white-space:pre-wrap">${esc(body.message).slice(0, 4000)}</p>
   `)
-  await sendMail(CONTACT_TO, `[fastlinesupercars.pl] Wiadomość od ${body.name}`, html)
+  const sent = await sendMail(CONTACT_TO, `[fastlinesupercars.pl] Wiadomość od ${name}`, html, undefined, body.email)
+  if (!sent.ok) return J({ error: 'Nie udało się wysłać wiadomości', detail: sent.err }, 502)
   return J({ ok: true })
 }
 

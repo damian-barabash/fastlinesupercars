@@ -22,12 +22,15 @@ export default function Dziekujemy() {
       try {
         if (pending) {
           const payload = JSON.parse(pending)
+          const name = (payload.customer?.name || '').trim()
+          // imię znamy od razu — nagłówek nie czeka na backend
+          setOrder({ name, email: payload.customer.email })
           const created = await shop('createOrder', payload)
-          setOrder({ number: created.number, total: created.total, email: payload.customer.email })
+          setOrder({ number: created.number, total: created.total, email: payload.customer.email, name })
           const paid = await shop('pay', { order_id: created.order_id })
           sessionStorage.removeItem('fs_pending_order')
           sessionStorage.setItem('fs_done_order', JSON.stringify({
-            number: created.number, total: created.total, email: payload.customer.email,
+            number: created.number, total: created.total, email: payload.customer.email, name,
             code: paid.voucher_code, valid_until: paid.valid_until,
           }))
           setVoucher({ code: paid.voucher_code, valid_until: paid.valid_until })
@@ -77,7 +80,10 @@ export default function Dziekujemy() {
         <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 16 }} className="dz-badge">
           {phase === 'paid' ? '✓' : <span className="dz-spinner" />}
         </motion.div>
-        <h1 className="h-xl">Dziękujemy{order ? `, zamówienie #${order.number}` : ''}!</h1>
+        <h1 className="h-xl">Dziękujemy{order?.name ? `, ${order.name}` : ''}!</h1>
+        {order?.number && (
+          <div className="dz-order-no">Zamówienie <b>#{order.number}</b></div>
+        )}
         <p className="dz-lead muted">
           {phase === 'paid'
             ? <>Płatność potwierdzona. Voucher PDF wysłaliśmy na <b style={{ color: 'var(--ink)' }}>{order?.email}</b>.</>

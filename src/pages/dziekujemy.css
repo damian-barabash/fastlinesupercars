@@ -10,6 +10,11 @@
   border-radius: 50%; animation: dzspin .8s linear infinite;
 }
 @keyframes dzspin { to { transform: rotate(360deg); } }
+.dz-order-no {
+  font-family: var(--label); font-weight: 600; font-size: 13px; letter-spacing: .28em;
+  text-transform: uppercase; color: var(--gray); margin-top: 14px;
+}
+.dz-order-no b { color: var(--red); font-style: italic; letter-spacing: .1em; }
 .dz-lead { font-size: 17px; margin-top: 16px; max-width: 560px; }
 
 .dz-voucher {

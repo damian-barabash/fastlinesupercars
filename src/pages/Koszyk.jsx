@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
 import { getCart, updateQty, removeFromCart, clearCart, cartTotal } from '../lib/cart.js'
 import { useProducts, productPrice } from '../lib/products.js'
 import { shop, zl } from '../lib/api.js'
@@ -7,6 +8,29 @@ import { Reveal } from '../components/Reveal.jsx'
 import './koszyk.css'
 
 const STEPS = ['Koszyk', 'Dane', 'Podsumowanie', 'Płatność']
+
+// płynne przeliczanie kwoty (rabat „wlatuje" w cenę i suma zjeżdża w dół)
+function useCountTo(value, ms = 620) {
+  const [shown, setShown] = useState(value)
+  const from = useRef(value)
+  useEffect(() => {
+    const start = performance.now()
+    const a = from.current, b = value
+    if (a === b) return
+    let raf = 0
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / ms)
+      const e = 1 - Math.pow(1 - t, 3)
+      const v = Math.round(a + (b - a) * e)
+      setShown(v)
+      from.current = v
+      if (t < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [value, ms])
+  return shown
+}
 
 export default function Koszyk() {
   const products = useProducts()
@@ -18,6 +42,10 @@ export default function Koszyk() {
   const [promo, setPromo] = useState('')
   const [promoState, setPromoState] = useState(null) // {discount, percent} | {error}
   const [promoBusy, setPromoBusy] = useState(false)
+  const [pending, setPending] = useState(null)       // rabat w locie do kwoty
+  const [fly, setFly] = useState(null)
+  const promoRef = useRef(null)
+  const totalRef = useRef(null)
 
   useEffect(() => {
     const fn = () => setItems(getCart())
@@ -44,20 +72,45 @@ export default function Koszyk() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  async function applyPromo() {
-    if (!promo.trim()) return
+  async function applyPromo(e) {
+    e?.preventDefault?.()
+    if (!promo.trim() || promoBusy) return
     setPromoBusy(true)
+    setPromoState(null)
     try {
       const d = await shop('checkPromo', { promo: promo.trim(), subtotal: total })
-      setPromoState(d.valid ? { discount: d.discount, percent: d.percent } : { error: d.error })
-    } catch (e) {
-      setPromoState({ error: e.message })
+      if (d.valid) {
+        // rabat leci z pola kodu prosto w kwotę „Razem", dopiero po wylądowaniu zmienia sumę
+        const from = promoRef.current?.getBoundingClientRect()
+        const to = totalRef.current?.getBoundingClientRect()
+        if (from && to) {
+          setFly({
+            label: `−${zl(d.discount)}`,
+            x: from.left + from.width / 2, y: from.top + from.height / 2,
+            dx: to.left + to.width / 2 - (from.left + from.width / 2),
+            dy: to.top + to.height / 2 - (from.top + from.height / 2),
+          })
+          setPending({ discount: d.discount, percent: d.percent })
+        } else {
+          setPromoState({ discount: d.discount, percent: d.percent })
+        }
+      } else {
+        setPromoState({ error: d.error })
+      }
+    } catch (err) {
+      setPromoState({ error: err.message })
     }
     setPromoBusy(false)
   }
 
+  function landPromo() {
+    setFly(null)
+    if (pending) { setPromoState(pending); setPending(null) }
+  }
+
   const discount = promoState?.discount || 0
   const grandTotal = total - discount
+  const shownTotal = useCountTo(grandTotal)
 
   // Optimistic payment: navigate to /dziekujemy immediately; order+pay run there in background
   function payNow() {
@@ -166,26 +219,57 @@ export default function Koszyk() {
                       <b>{zl(r.price * r.qty)}</b>
                     </div>
                   ))}
-                  {discount > 0 && (
-                    <div className="koszyk-sum-row koszyk-sum-discount">
-                      <span>Rabat {promo.trim().toUpperCase()} (−{promoState.percent}%)</span><b>−{zl(discount)}</b>
-                    </div>
-                  )}
+                  <AnimatePresence>
+                    {discount > 0 && (
+                      <motion.div
+                        className="koszyk-sum-row koszyk-sum-discount"
+                        initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                      >
+                        <span>Rabat {promo.trim().toUpperCase()} (−{promoState.percent}%)</span><b>−{zl(discount)}</b>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <div className="koszyk-sum-row koszyk-sum-total">
-                    <span>Razem</span><b>{zl(grandTotal)}</b>
+                    <span>Razem</span>
+                    <b ref={totalRef} className={discount > 0 ? 'is-cut' : ''}>{zl(shownTotal)}</b>
                   </div>
                 </div>
-                <div className="koszyk-promo">
-                  <div className="field">
+                <form className="koszyk-promo" onSubmit={applyPromo}>
+                  <div className="field" ref={promoRef}>
                     <label>Kod rabatowy</label>
-                    <input value={promo} onChange={(e) => { setPromo(e.target.value); setPromoState(null) }} placeholder="np. FAST" />
+                    <input
+                      value={promo}
+                      onChange={(e) => { setPromo(e.target.value); setPromoState(null); setPending(null) }}
+                      placeholder="np. FAST"
+                      autoCapitalize="characters"
+                      spellCheck={false}
+                    />
                   </div>
-                  <button className="btn btn-ghost koszyk-promo-btn" onClick={applyPromo} disabled={promoBusy || !promo.trim()}>
-                    {promoBusy ? '…' : 'Zastosuj'}
+                  <button type="submit" className="btn btn-ghost koszyk-promo-btn" disabled={promoBusy || !promo.trim()}>
+                    {promoBusy ? <><span className="koszyk-spin" /> Sprawdzam</> : 'Zastosuj'}
                   </button>
-                </div>
+                </form>
                 {promoState?.error && <p className="koszyk-err">{promoState.error}</p>}
-                {discount > 0 && <p className="koszyk-promo-ok">✓ Kod działa — oszczędzasz {zl(discount)}</p>}
+                {discount > 0 && (
+                  <motion.p className="koszyk-promo-ok" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+                    ✓ Kod {promo.trim().toUpperCase()} działa — oszczędzasz {zl(discount)}
+                  </motion.p>
+                )}
+                <AnimatePresence>
+                  {fly && (
+                    <motion.div
+                      className="koszyk-fly"
+                      style={{ left: fly.x, top: fly.y }}
+                      initial={{ x: '-50%', y: '-50%', scale: 0.4, opacity: 0 }}
+                      animate={{ x: `calc(-50% + ${fly.dx}px)`, y: `calc(-50% + ${fly.dy}px)`, scale: [0.4, 1.15, 0.75], opacity: [0, 1, 1] }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.75, ease: [0.22, 0.8, 0.3, 1], times: [0, 0.35, 1] }}
+                      onAnimationComplete={landPromo}
+                    >
+                      {fly.label}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <div className="koszyk-sum-meta">
                   <p><b>{form.name}</b> · {form.email}{form.phone ? ` · ${form.phone}` : ''}</p>
                   {form.gift && form.gift_for && <p>Voucher dla: <b>{form.gift_for}</b></p>}
@@ -207,7 +291,7 @@ export default function Koszyk() {
             {step === 3 && (
               <Reveal className="koszyk-pay">
                 <h2 className="h-md">Płatność</h2>
-                <div className="koszyk-pay-box carbon">
+                <div className="koszyk-pay-box">
                   <div className="koszyk-pay-method is-active">
                     <span className="koszyk-pay-radio" />
                     <div>
@@ -217,6 +301,11 @@ export default function Koszyk() {
                     <span className="koszyk-pay-total">{zl(grandTotal)}</span>
                   </div>
                 </div>
+                {discount > 0 && (
+                  <p className="koszyk-promo-ok" style={{ marginBottom: 12 }}>
+                    ✓ Rabat {promo.trim().toUpperCase()} (−{promoState.percent}%) uwzględniony — taniej o {zl(discount)}
+                  </p>
+                )}
                 <p className="muted" style={{ fontSize: 13 }}>
                   Po kliknięciu „Zapłać" przetworzymy zamówienie i wygenerujemy Twój voucher.
                 </p>

@@ -37,6 +37,14 @@
 .koszyk-item-qty span { min-width: 28px; text-align: center; font-weight: 600; }
 .koszyk-item-del { background: none; border: none; color: var(--gray-light); font-size: 15px; padding: 8px; transition: color .15s ease; }
 .koszyk-item-del:hover { color: var(--red); }
+@media (max-width: 560px) {
+  .koszyk-item { flex-wrap: wrap; gap: 12px; padding: 14px; }
+  .koszyk-item-img { width: 74px; height: 58px; }
+  .koszyk-item-body { flex: 1 1 0; min-width: 0; }
+  .koszyk-item-name { font-size: 15px; }
+  .koszyk-item-del { order: 3; align-self: flex-start; }
+  .koszyk-item-qty { order: 4; flex: 1 0 100%; justify-content: flex-end; }
+}
 
 .koszyk-actions { display: flex; justify-content: space-between; gap: 14px; margin-top: 28px; flex-wrap: wrap; }
 .koszyk-err { color: var(--red); font-size: 14px; margin-top: 14px; }
@@ -49,29 +57,63 @@
 .koszyk-check { display: flex; gap: 12px; align-items: flex-start; margin: 20px 0; cursor: pointer; font-size: 14px; color: var(--ink); }
 .koszyk-check input { accent-color: var(--red); width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; }
 
-.koszyk-sum-box { border: 1.5px solid var(--line); padding: 22px 26px; }
-.koszyk-sum-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+/* ciemny box podsumowania — wszystkie teksty muszą być jasne */
+.koszyk-sum-box { border: 1.5px solid rgba(255,255,255,.12); padding: 22px 26px; color: #fff; }
+.koszyk-sum-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.1); font-size: 14.5px; overflow: hidden; }
 .koszyk-sum-row:last-child { border-bottom: none; }
-.koszyk-sum-discount { color: #1d7a3a; }
-.koszyk-sum-discount b { color: #1d7a3a; }
+.koszyk-sum-row b { white-space: nowrap; }
+.koszyk-sum-discount, .koszyk-sum-discount b { color: #4ade80; }
 .koszyk-sum-total { font-family: var(--display); text-transform: uppercase; font-size: 18px; padding-top: 16px; }
-.koszyk-sum-total b { color: var(--red); font-size: 24px; }
+.koszyk-sum-total b { color: #fff; font-size: 26px; transition: color .2s ease; }
+.koszyk-sum-total b.is-cut { color: #4ade80; animation: cutPulse .7s ease; }
+@keyframes cutPulse { 0% { transform: scale(1); } 35% { transform: scale(1.16); } 100% { transform: scale(1); } }
 .koszyk-sum-meta { margin-top: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14.5px; }
 
 .koszyk-promo { display: flex; gap: 10px; margin-top: 18px; align-items: flex-end; }
 .koszyk-promo .field { flex: 1; max-width: 260px; }
-.koszyk-promo-btn { padding: 12px 20px; font-size: 12.5px; }
+.koszyk-promo input { text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.koszyk-promo-btn { padding: 12px 20px; font-size: 12.5px; min-width: 146px; white-space: nowrap; }
+@media (max-width: 620px) {
+  .koszyk-promo { flex-wrap: wrap; }
+  .koszyk-promo .field { flex: 1 1 100%; max-width: none; }
+  .koszyk-promo-btn { flex: 1 1 100%; }
+}
 .koszyk-promo-ok { color: #1d7a3a; font-size: 13.5px; font-weight: 600; margin-top: 8px; }
+.koszyk-spin {
+  width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; display: inline-block; animation: koszykSpin .7s linear infinite;
+}
+@keyframes koszykSpin { to { transform: rotate(360deg); } }
+/* rabat lecący z pola kodu w kwotę „Razem" */
+.koszyk-fly {
+  position: fixed; z-index: 300; pointer-events: none;
+  background: #4ade80; color: #08240f; font-family: var(--label); font-weight: 700; font-style: italic;
+  font-size: 15px; letter-spacing: .04em; padding: 8px 16px; white-space: nowrap;
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+  box-shadow: 0 10px 30px rgba(74,222,128,.35);
+}
+@media (prefers-reduced-motion: reduce) { .koszyk-fly { display: none; } }
 
-.koszyk-pay-box { border: 1.5px solid var(--line); padding: 10px; margin-bottom: 18px; }
-.koszyk-pay-method { display: flex; align-items: center; gap: 16px; padding: 16px 18px; border: 1.5px solid transparent; }
+.koszyk-pay-box { border: 1.5px solid var(--line); background: #fff; padding: 10px; margin-bottom: 18px; }
+.koszyk-pay-method { display: flex; align-items: center; gap: 16px; padding: 16px 18px; border: 1.5px solid transparent; color: var(--ink); }
 .koszyk-pay-method.is-active { border-color: var(--red); background: #fff5f4; }
+.koszyk-pay-method b { color: var(--ink); }
+.koszyk-pay-method p { color: var(--gray); }
 .koszyk-pay-method > div { flex: 1; }
 .koszyk-pay-method p { font-size: 13px; }
 .koszyk-pay-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--red); position: relative; flex-shrink: 0; }
 .koszyk-pay-method.is-active .koszyk-pay-radio::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--red); }
-.koszyk-pay-total { font-family: var(--display); font-size: 22px; }
+.koszyk-pay-total { font-family: var(--display); font-size: 22px; color: var(--ink); white-space: nowrap; }
+@media (max-width: 620px) {
+  .koszyk-pay-method { flex-wrap: wrap; gap: 12px; }
+  .koszyk-pay-method > div { min-width: 0; }
+  .koszyk-pay-total { flex: 1 0 100%; text-align: right; }
+}
 .koszyk-paybtn { font-size: 15px; padding: 16px 40px; }
 
-.koszyk-side { background: #fff; box-shadow: var(--shadow); padding: 26px 28px; position: sticky; top: 140px; }
-.koszyk-side-total { font-family: var(--display); font-size: 34px; margin: 8px 0 16px; color: var(--ink); }
+/* boczne „Razem" leży na ciemnym karbonie — teksty jasne, inaczej znikają */
+.koszyk-side { box-shadow: var(--shadow); padding: 26px 28px; position: sticky; top: 140px; }
+.koszyk-side h3 { color: #fff; }
+.koszyk-side-total { font-family: var(--display); font-size: 34px; margin: 8px 0 16px; color: #fff; }
+.koszyk-side .produkt-usp li { color: #c3c3cb; }
+.koszyk-side .produkt-usp li b { color: #fff; }

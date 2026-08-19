@@ -50,9 +50,11 @@
 }
 .nav-drop::after { content: ''; position: absolute; inset: 100% 0 -14px 0; }
 .nav-drop:hover .nav-drop-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+.nav-drop-toggle { display: none; background: none; border: none; color: inherit; }
 .nav-drop-menu a { padding: 9px 20px; font-size: 14px; }
 .nav-drop-menu a::after { display: none; }
 .nav-drop-menu a:hover { background: #1d1d22; color: var(--red); }
+.nav-drop-menu .nav-drop-all { border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 4px; padding-bottom: 11px; }
 
 .nav-right { display: flex; align-items: center; gap: 12px; }
 .nav-cta { padding: 11px 22px; font-size: 12.5px; }
@@ -71,13 +73,33 @@
   .nav-cta { display: none !important; }
   .nav-links {
     position: fixed; inset: 0; background: rgba(12,12,15,.97); backdrop-filter: blur(18px);
-    flex-direction: column; justify-content: center; gap: 24px;
+    flex-direction: column; justify-content: flex-start; align-items: center; gap: 24px;
+    padding: max(96px, 14vh) 20px 48px; overflow-y: auto; overscroll-behavior: contain;
     opacity: 0; visibility: hidden; transition: opacity .25s ease; z-index: 250;
   }
   .nav-links.nav-open { opacity: 1; visibility: visible; }
   .nav-links a { font-size: 20px; color: #fff; }
-  .nav-drop-menu { position: static; opacity: 1; visibility: visible; transform: none; background: none; border: none; align-items: center; gap: 2px; display: none; box-shadow: none; }
-  .nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu { display: flex; }
+  .nav-links > *, .nav-drop > * { flex-shrink: 0; }
+
+  /* rozwijane „Tory" na dotyku: tap otwiera listę, nie wchodzi od razu na tor */
+  .nav-drop { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .nav-drop-link { display: none; }
+  .nav-drop-toggle {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-family: var(--body); font-size: 20px; font-weight: 400; color: #fff; padding: 6px 0;
+  }
+  .nav-drop-toggle .nav-caret { transition: transform .2s ease; }
+  .nav-drop.is-open .nav-drop-toggle .nav-caret { transform: rotate(180deg); }
+  .nav-drop-menu {
+    position: static; opacity: 1; visibility: visible; transform: none; box-shadow: none;
+    background: rgba(255,255,255,.04); border: none; border-left: 2px solid var(--red);
+    align-items: center; gap: 4px; display: none; padding: 10px 0; min-width: 220px;
+  }
+  .nav-drop:hover .nav-drop-menu { display: none; }
+  .nav-drop.is-open .nav-drop-menu { display: flex; }
+  .nav-links .nav-drop-menu a { font-size: 16px; color: #cfcfd6; padding: 8px 16px; }
+  .nav-links .nav-drop-menu a.nav-drop-all { color: #fff; font-weight: 600; }
+  .nav-links .nav-drop-menu a:hover, .nav-links .nav-drop-menu a.active { background: none; color: var(--red); }
   .nav-cta-mobile { display: flex; gap: 12px; margin-top: 16px; }
   .nav-links .nav-cta-mobile a {
     font-family: var(--label); font-size: 13px; font-weight: 700; font-style: italic;

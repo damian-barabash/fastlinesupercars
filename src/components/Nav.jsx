@@ -23,6 +23,7 @@ const STEPS = [
 
 export default function Nav() {
   const [open, setOpen] = useState(false)
+  const [toryOpen, setToryOpen] = useState(false)
   const [tick, setTick] = useState(0)
   const products = useProducts()
   const loc = useLocation()
@@ -34,7 +35,8 @@ export default function Nav() {
     return () => { window.removeEventListener('fs-cart', fn); window.removeEventListener('storage', fn) }
   }, [])
 
-  useEffect(() => { setOpen(false) }, [loc.pathname])
+  useEffect(() => { setOpen(false); setToryOpen(false) }, [loc.pathname])
+  useEffect(() => { if (!open) setToryOpen(false) }, [open])
 
   const { count, total } = useMemo(() => {
     const items = getCart()
@@ -73,9 +75,19 @@ export default function Nav() {
         <nav className={`nav-links ${open ? 'nav-open' : ''}`}>
           <NavLink to="/o-nas">Dlaczego My</NavLink>
           <NavLink to="/oferta">Oferta</NavLink>
-          <div className="nav-drop">
-            <NavLink to="/tory">Tory <span className="nav-caret">▾</span></NavLink>
+          <div className={`nav-drop ${toryOpen ? 'is-open' : ''}`}>
+            {/* desktop: hover; mobile: przycisk rozwija listę zamiast wchodzić na tor */}
+            <NavLink to="/tory" className="nav-drop-link">Tory <span className="nav-caret">▾</span></NavLink>
+            <button
+              type="button"
+              className="nav-drop-toggle"
+              aria-expanded={toryOpen}
+              onClick={() => setToryOpen((v) => !v)}
+            >
+              Tory <span className="nav-caret">▾</span>
+            </button>
             <div className="nav-drop-menu">
+              <NavLink to="/tory" className="nav-drop-all">Wszystkie tory</NavLink>
               {TORY_LINKS.map((t) => <NavLink key={t.to} to={t.to}>{t.label}</NavLink>)}
             </div>
           </div>

@@ -3,11 +3,11 @@
   display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 40px;
   padding-bottom: 64px;
 }
-.footer-col { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.footer-col { display: flex; flex-direction: column; gap: 10px; font-size: 14px; min-width: 0; }
 .footer-col a { color: #b9b9c0; transition: color .15s ease; width: fit-content; }
 .footer-col a:hover { color: var(--red); }
 .footer-logo { height: 44px; width: auto; margin-bottom: 10px; align-self: flex-start; }
-.footer-mail { font-family: var(--label); font-weight: 600; letter-spacing: .02em; color: #fff !important; font-size: 15px; }
+.footer-mail { font-family: var(--label); font-weight: 600; letter-spacing: .02em; color: #fff !important; font-size: 15px; overflow-wrap: anywhere; }
 .footer-mail:hover { color: var(--red) !important; }
 .footer-h {
   font-family: var(--label); font-weight: 700; font-style: italic; text-transform: uppercase;
@@ -20,7 +20,20 @@
   padding-top: 18px; padding-bottom: 18px; font-size: 12.5px; color: #8a8a92;
 }
 .footer-tag { font-family: var(--label); font-weight: 700; font-style: italic; letter-spacing: .2em; }
-@media (max-width: 900px) { .footer-in { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 520px) { .footer-in { grid-template-columns: 1fr; } .footer-bottom-in { flex-direction: column; gap: 6px; } }
-
-@media (max-width: 720px) { .footer { padding-top: 64px; } }
+/* NOTE: selektory muszą mieć tę samą specyficzność co `.footer .footer-in` powyżej,
+   inaczej media queries w ogóle nie zadziałają (stąd wcześniejszy rozjazd na mobile). */
+@media (max-width: 1000px) {
+  .footer .footer-in { grid-template-columns: 1fr 1fr 1fr; gap: 34px 28px; }
+  .footer .footer-col:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .footer { padding-top: 64px; }
+  .footer .footer-in { grid-template-columns: 1fr 1fr; gap: 30px 22px; padding-bottom: 44px; }
+  .footer .footer-logo { height: 40px; }
+  .footer .footer-mail { font-size: 14px; }
+  .footer .footer-h { font-size: 12px; letter-spacing: .16em; }
+  .footer .footer-bottom-in { flex-direction: column; gap: 8px; text-align: center; }
+}
+@media (max-width: 380px) {
+  .footer .footer-in { grid-template-columns: 1fr; }
+}
