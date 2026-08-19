@@ -6,6 +6,7 @@ import { startSmooth, stopSmooth, scrollTop } from './lib/smooth.js'
 import Nav from './components/Nav.jsx'
 import Footer from './components/Footer.jsx'
 import SpeedFx from './components/SpeedFx.jsx'
+import SeoSync from './components/SeoSync.jsx'
 import Home from './pages/Home.jsx'
 import Oferta from './pages/Oferta.jsx'
 import Produkt from './pages/Produkt.jsx'
@@ -54,6 +55,7 @@ export default function App() {
   return (
     <ContentProvider>
       <ScrollToTop />
+      <SeoSync />
       <SpeedFx />
       <Nav />
       <motion.div

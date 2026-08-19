@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.mjs",
     "preview": "vite preview",
-    "webp": "node scripts/convert-webp.mjs"
+    "webp": "node scripts/convert-webp.mjs",
+    "prerender": "node scripts/prerender.mjs"
   },
   "dependencies": {
     "framer-motion": "^11.11.17",
