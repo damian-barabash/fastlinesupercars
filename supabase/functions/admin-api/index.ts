@@ -1,5 +1,5 @@
 // FASTLINESUPERCARS — admin-api edge function
-// login | logout | content.get/set | products.list/save | orders.list | vouchers.list/update | upload | voucherPdfUrl | stats
+// login | logout | content.get/set | products.list/save | orders.list | vouchers.list/update | promos.list/save/delete | upload | voucherPdfUrl | stats
 import { compare } from 'https://esm.sh/bcrypt-ts@5.0.2'
 
 const SB_URL = Deno.env.get('SUPABASE_URL')!
@@ -217,6 +217,35 @@ Deno.serve(async (req) => {
           await db('settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify(entries) })
         return J({ ok: true })
       }
+
+      case 'promos.list': {
+        // kody + ile razy każdy został użyty w opłaconych zamówieniach (notes: "promo:KOD -X zł")
+        const [codes, orders] = await Promise.all([
+          db('promo_codes?select=*&order=created_at.desc'),
+          db('orders?status=eq.paid&notes=like.promo:*&select=notes'),
+        ])
+        const uses: Record<string, number> = {}
+        for (const o of orders || []) {
+          const m = /^promo:([A-Z0-9_-]+)/i.exec(o.notes || '')
+          if (m) uses[m[1].toUpperCase()] = (uses[m[1].toUpperCase()] || 0) + 1
+        }
+        return J((codes || []).map((c: { code: string }) => ({ ...c, uses: uses[c.code] || 0 })))
+      }
+
+      case 'promos.save': {
+        const code = String(body.code || '').trim().toUpperCase().replace(/\s+/g, '')
+        if (!/^[A-Z0-9_-]{2,32}$/.test(code)) return J({ error: 'Kod: 2–32 znaki, litery/cyfry/-/_' }, 400)
+        const percent = Math.round(Number(body.percent))
+        if (!(percent >= 1 && percent <= 100)) return J({ error: 'Rabat musi być między 1 a 100%' }, 400)
+        const min_grosze = Math.max(0, Math.round(Number(body.min_grosze) || 0))
+        const row = { code, percent, min_grosze, active: body.active !== false, note: String(body.note || '').slice(0, 200) }
+        await db('promo_codes', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(row) })
+        return J({ ok: true, code })
+      }
+
+      case 'promos.delete':
+        await db(`promo_codes?code=eq.${encodeURIComponent(String(body.code || ''))}`, { method: 'DELETE' })
+        return J({ ok: true })
 
       case 'vouchers.update': {
         const patch: Record<string, unknown> = {}

@@ -119,13 +119,8 @@ function UploadBtn({ onDone, children = 'Wgraj plik', className = 'adm-btn-sec' 
 
 function Stats() {
   const [s, setS] = useState(null)
-  const [promo, setPromo] = useState(null)
-  const [saving, setSaving] = useState(false)
   useEffect(() => {
     adminApi('stats').then(setS).catch(() => {})
-    adminApi('settings.get').then((m) => setPromo({
-      code: m.promo_code || '', percent: m.promo_percent || '10', min: String((+(m.promo_min_grosze || 0)) / 100),
-    })).catch(() => {})
   }, [])
   if (!s) return <p className="adm-muted">Ładowanie…</p>
   const MONTH_NAMES = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
@@ -135,13 +130,6 @@ function Stats() {
     { label: 'Vouchery użyte', value: s.vouchers_used },
     { label: 'Przychód łącznie', value: zl(s.revenue) },
   ]
-  async function savePromo() {
-    setSaving(true)
-    try {
-      await adminApi('settings.set', { data: { promo_code: promo.code.trim().toUpperCase(), promo_percent: promo.percent, promo_min_grosze: String(Math.round(parseFloat(String(promo.min).replace(',', '.')) * 100) || 0) } })
-    } catch (e) { alert(e.message) }
-    setSaving(false)
-  }
   return (
     <div>
       <h2 className="adm-h">Statystyki</h2>
@@ -169,17 +157,79 @@ function Stats() {
           </tbody>
         </table>
       </div>
-      {promo && (
-        <div className="adm-card adm-promo">
-          <h3 className="adm-card-title">Kod rabatowy <span className="adm-muted">(baner na stronie głównej)</span></h3>
-          <div className="adm-promo-grid">
-            <div className="field"><label>Kod</label><input value={promo.code} onChange={(e) => setPromo({ ...promo, code: e.target.value })} /></div>
-            <div className="field"><label>Rabat %</label><input type="number" value={promo.percent} onChange={(e) => setPromo({ ...promo, percent: e.target.value })} /></div>
-            <div className="field"><label>Min. zakupy (zł)</label><input value={promo.min} onChange={(e) => setPromo({ ...promo, min: e.target.value })} /></div>
-            <button className="btn btn-red" disabled={saving} onClick={savePromo}>{saving ? 'Zapisywanie…' : 'Zapisz'}</button>
-          </div>
-        </div>
-      )}
+      <PromoCodes />
+    </div>
+  )
+}
+
+
+/* ---------- Kody rabatowe ---------- */
+
+const BLANK_PROMO = { code: '', percent: '10', min: '', note: '' }
+
+function PromoCodes() {
+  const [list, setList] = useState(null)
+  const [form, setForm] = useState(BLANK_PROMO)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const load = () => adminApi('promos.list').then(setList).catch((e) => setErr(e.message))
+  useEffect(() => { load() }, [])
+
+  async function add(e) {
+    e.preventDefault()
+    setBusy(true); setErr('')
+    try {
+      await adminApi('promos.save', { code: form.code, percent: form.percent, min_grosze: toGr(form.min || 0), note: form.note })
+      setForm(BLANK_PROMO)
+      await load()
+    } catch (e2) { setErr(e2.message) }
+    setBusy(false)
+  }
+  async function toggle(c) {
+    setList((l) => l.map((x) => (x.code === c.code ? { ...x, active: !c.active } : x)))
+    try { await adminApi('promos.save', { ...c, active: !c.active }) } catch (e2) { alert(e2.message); load() }
+  }
+  async function remove(c) {
+    if (!confirm(`Usunąć kod ${c.code}? Klienci nie będą mogli go już użyć.`)) return
+    setList((l) => l.filter((x) => x.code !== c.code))
+    try { await adminApi('promos.delete', { code: c.code }) } catch (e2) { alert(e2.message); load() }
+  }
+
+  return (
+    <div className="adm-card adm-promo">
+      <h3 className="adm-card-title">Kody rabatowe <span className="adm-muted">(działają w koszyku przy zakupie)</span></h3>
+      <form className="adm-promo-grid" onSubmit={add}>
+        <div className="field"><label>Kod</label><input value={form.code} placeholder="np. LATO20" onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} required /></div>
+        <div className="field"><label>Rabat %</label><input type="number" min="1" max="100" value={form.percent} onChange={(e) => setForm({ ...form, percent: e.target.value })} required /></div>
+        <div className="field"><label>Min. zakupy (zł)</label><input value={form.min} placeholder="0" onChange={(e) => setForm({ ...form, min: e.target.value })} /></div>
+        <div className="field adm-promo-note"><label>Notatka</label><input value={form.note} placeholder="np. kampania IG" onChange={(e) => setForm({ ...form, note: e.target.value })} /></div>
+        <button className="btn btn-red" disabled={busy || !form.code.trim()}>{busy ? 'Zapisywanie…' : '+ Dodaj kod'}</button>
+      </form>
+      {err && <p className="adm-err">{err}</p>}
+      <div className="adm-table-wrap" style={{ marginTop: 18 }}>
+        <table className="adm-table">
+          <thead><tr><th>Kod</th><th>Rabat</th><th>Min. zakupy</th><th>Użyto</th><th>Notatka</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {list === null && <tr><td colSpan={7} className="adm-muted">Ładowanie…</td></tr>}
+            {list && !list.length && <tr><td colSpan={7} className="adm-muted">Brak kodów — dodaj pierwszy powyżej</td></tr>}
+            {(list || []).map((c) => (
+              <tr key={c.code} style={{ opacity: c.active ? 1 : 0.55 }}>
+                <td><b>{c.code}</b></td>
+                <td>−{c.percent}%</td>
+                <td>{c.min_grosze ? `od ${zl(c.min_grosze)}` : '—'}</td>
+                <td>{c.uses}×</td>
+                <td className="adm-muted">{c.note || '—'}</td>
+                <td>
+                  <button type="button" className={`adm-pill ${c.active ? 'is-on' : ''}`} onClick={() => toggle(c)}>
+                    {c.active ? 'Aktywny' : 'Wyłączony'}
+                  </button>
+                </td>
+                <td style={{ textAlign: 'right' }}><button type="button" className="adm-btn-sec adm-btn-danger" onClick={() => remove(c)}>Usuń</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

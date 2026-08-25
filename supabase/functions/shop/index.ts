@@ -30,11 +30,14 @@ function returnOrigin(raw?: string) {
   return SITE
 }
 
-async function getPromo() {
-  const rows = await db(`settings?key=in.(promo_code,promo_percent,promo_min_grosze)&select=key,value`)
-  const m: Record<string, string> = {}
-  for (const r of rows || []) m[r.key] = r.value
-  return { code: (m.promo_code || '').trim(), percent: +(m.promo_percent || 0), min: +(m.promo_min_grosze || 0) }
+/** Kod rabatowy z tabeli `promo_codes` (tylko aktywne). Zwraca null, gdy kodu nie ma. */
+async function getPromo(raw?: string) {
+  const code = (raw || '').trim().toUpperCase()
+  if (!code || !/^[A-Z0-9_-]{2,32}$/.test(code)) return null
+  const rows = await db(`promo_codes?code=eq.${encodeURIComponent(code)}&active=is.true&select=code,percent,min_grosze`)
+  const r = rows?.[0]
+  if (!r || !(+r.percent > 0)) return null
+  return { code: r.code as string, percent: +r.percent, min: +(r.min_grosze || 0) }
 }
 
 type Line = { product_id: string; name: string; variant: string; price: number; qty: number }
@@ -68,14 +71,11 @@ async function buildOrder(body: CheckoutBody): Promise<Built> {
 
   let discount = 0, promoUsed = ''
   if (body.promo) {
-    const promo = await getPromo()
-    if (promo.code && body.promo.trim().toUpperCase() === promo.code.toUpperCase() && promo.percent > 0) {
-      if (subtotal < promo.min) return { error: J({ error: `Kod ${promo.code} działa od ${(promo.min / 100).toFixed(0)} zł` }, 400) }
-      discount = Math.round(subtotal * promo.percent / 100)
-      promoUsed = promo.code.toUpperCase()
-    } else {
-      return { error: J({ error: 'Nieprawidłowy kod rabatowy' }, 400) }
-    }
+    const promo = await getPromo(body.promo)
+    if (!promo) return { error: J({ error: 'Nieprawidłowy kod rabatowy' }, 400) }
+    if (subtotal < promo.min) return { error: J({ error: `Kod ${promo.code} działa od ${(promo.min / 100).toFixed(0)} zł` }, 400) }
+    discount = Math.round(subtotal * promo.percent / 100)
+    promoUsed = promo.code
   }
   const total = subtotal - discount
   if (total <= 0) return { error: J({ error: 'Nieprawidłowa kwota zamówienia' }, 400) }
@@ -139,12 +139,11 @@ async function checkout(body: CheckoutBody) {
 }
 
 async function checkPromo(body: { promo: string; subtotal: number }) {
-  const promo = await getPromo()
-  if (!promo.code || (body.promo || '').trim().toUpperCase() !== promo.code.toUpperCase())
-    return J({ valid: false, error: 'Nieprawidłowy kod rabatowy' })
+  const promo = await getPromo(body.promo)
+  if (!promo) return J({ valid: false, error: 'Nieprawidłowy kod rabatowy' })
   if ((body.subtotal || 0) < promo.min)
     return J({ valid: false, error: `Kod ${promo.code} działa przy zakupach od ${(promo.min / 100).toFixed(0)} zł` })
-  return J({ valid: true, percent: promo.percent, discount: Math.round((body.subtotal || 0) * promo.percent / 100) })
+  return J({ valid: true, code: promo.code, percent: promo.percent, discount: Math.round((body.subtotal || 0) * promo.percent / 100) })
 }
 
 /** Tryb testowy — bez płatności. Domyślnie wyłączony; w produkcji NIE włączać. */
