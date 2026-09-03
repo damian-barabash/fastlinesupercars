@@ -252,3 +252,42 @@
 .adm-pill.is-on { background: #e8f8ee; border-color: #86d9a5; color: #1d7a3a; }
 .adm-btn-danger { color: #b91c1c; border-color: #f3c2c2; }
 .adm-btn-danger:hover { background: #fff1f1; }
+
+/* ---------- Vouchery: bony kwotowe, import z pliku ---------- */
+
+.adm-subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.adm-subtabs button {
+  background: #f4f4f6; border: 1px solid #e3e3e8; border-radius: 999px;
+  padding: 8px 18px; font-size: 13px; font-weight: 600; color: #55555f; cursor: pointer;
+}
+.adm-subtabs button:hover { background: #ececf1; }
+.adm-subtabs button.is-active { background: var(--red); border-color: var(--red); color: #fff; }
+.adm-subtabs-main { margin-bottom: 20px; }
+
+.adm-hint { display: block; margin-top: 5px; font-size: 12px; color: #8a8a92; }
+.adm-check { display: flex; align-items: center; gap: 9px; font-size: 14px; cursor: pointer; }
+.adm-check input { width: 17px; height: 17px; accent-color: var(--red); }
+.adm-err-cell { color: #b91c1c; font-weight: 600; }
+.adm-stats-slim { margin: 0 0 16px; }
+.adm-stats-slim .adm-stat-val { font-size: 22px; }
+
+.adm-codes-result .adm-codes-box {
+  max-height: 240px; overflow: auto; white-space: pre; font-family: var(--display);
+  letter-spacing: .06em; font-size: 14px; line-height: 1.9;
+  background: #fafafb; border: 1px solid #e6e6ec; border-radius: 8px; padding: 14px 18px;
+}
+
+.adm-import-drop {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  border: 1px dashed #d3d3db; border-radius: 10px; padding: 18px 20px; background: #fafafb;
+}
+.adm-import-drop .adm-hint { margin: 0; }
+.adm-import-sum { margin: 14px 0 16px; font-size: 14px; color: #55555f; }
+.adm-import-report { margin-top: 14px; font-size: 14px; color: #55555f; }
+.adm-import-report ul { margin: 8px 0 0 18px; color: #b91c1c; font-size: 13px; }
+
+.adm-batchbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  background: #fff; border: 1px solid #e6e6ec; border-radius: 10px;
+  padding: 12px 18px; margin-bottom: 16px; font-size: 14px;
+}

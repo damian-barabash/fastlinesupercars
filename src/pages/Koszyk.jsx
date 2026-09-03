@@ -41,7 +41,8 @@ export default function Koszyk() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', gift_for: '', gift: false, terms: false })
   const [err, setErr] = useState('')
   const [promo, setPromo] = useState('')
-  const [promoState, setPromoState] = useState(null) // {discount, percent} | {error}
+  // {kind:'promo'|'voucher', code, discount, percent?, amount?} albo {error}
+  const [promoState, setPromoState] = useState(null)
   const [promoBusy, setPromoBusy] = useState(false)
   const [payBusy, setPayBusy] = useState(false)
   const [pending, setPending] = useState(null)       // rabat w locie do kwoty
@@ -82,6 +83,7 @@ export default function Koszyk() {
     try {
       const d = await shop('checkPromo', { promo: promo.trim(), subtotal: total })
       if (d.valid) {
+        const applied = { kind: d.kind, code: d.code, discount: d.discount, percent: d.percent, amount: d.amount }
         // rabat leci z pola kodu prosto w kwotę „Razem", dopiero po wylądowaniu zmienia sumę
         const from = promoRef.current?.getBoundingClientRect()
         const to = totalRef.current?.getBoundingClientRect()
@@ -92,9 +94,9 @@ export default function Koszyk() {
             dx: to.left + to.width / 2 - (from.left + from.width / 2),
             dy: to.top + to.height / 2 - (from.top + from.height / 2),
           })
-          setPending({ discount: d.discount, percent: d.percent })
+          setPending(applied)
         } else {
-          setPromoState({ discount: d.discount, percent: d.percent })
+          setPromoState(applied)
         }
       } else {
         setPromoState({ error: d.error })
@@ -110,9 +112,16 @@ export default function Koszyk() {
     if (pending) { setPromoState(pending); setPending(null) }
   }
 
-  const discount = promoState?.discount || 0
+  const discount = Math.min(promoState?.discount || 0, total)
   const grandTotal = total - discount
   const shownTotal = useCountTo(grandTotal)
+  const isVoucher = promoState?.kind === 'voucher'
+  const appliedCode = promoState?.code || promo.trim().toUpperCase()
+  const discountLabel = isVoucher
+    ? `Voucher ${appliedCode}`
+    : `Rabat ${appliedCode}${promoState?.percent ? ` (−${promoState.percent}%)` : ''}`
+  // bon pokrył całe zamówienie — nie ma czego wysyłać do bramki
+  const fullyCovered = discount > 0 && grandTotal === 0
 
   // Płatność: serwer zakłada zamówienie (ceny liczy sam) i tworzy transakcję Tpay,
   // my tylko przekierowujemy do bramki. Zamówienie zostaje `pending` do czasu
@@ -132,6 +141,7 @@ export default function Koszyk() {
       })
       clearCart()
       if (d.payment_url) { window.location.assign(d.payment_url); return }
+      // bon pokrył całość (albo tryb testowy) — zamówienie jest już zrealizowane po stronie serwera
       nav(`/dziekujemy?order=${d.order_id}${d.test_mode ? '&test=1' : ''}`)
     } catch (e) {
       setErr(e.message || 'Nie udało się rozpocząć płatności')
@@ -239,7 +249,7 @@ export default function Koszyk() {
                         className="koszyk-sum-row koszyk-sum-discount"
                         initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                       >
-                        <span>Rabat {promo.trim().toUpperCase()} (−{promoState.percent}%)</span><b>−{zl(discount)}</b>
+                        <span>{discountLabel}</span><b>−{zl(discount)}</b>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -250,11 +260,11 @@ export default function Koszyk() {
                 </div>
                 <form className="koszyk-promo" onSubmit={applyPromo}>
                   <div className="field" ref={promoRef}>
-                    <label>Kod rabatowy</label>
+                    <label>Kod rabatowy lub voucher</label>
                     <input
                       value={promo}
                       onChange={(e) => { setPromo(e.target.value); setPromoState(null); setPending(null) }}
-                      placeholder="np. FAST"
+                      placeholder="np. FAST albo BON-XXXX-XXXX"
                       autoCapitalize="characters"
                       spellCheck={false}
                     />
@@ -266,8 +276,15 @@ export default function Koszyk() {
                 {promoState?.error && <p className="koszyk-err">{promoState.error}</p>}
                 {discount > 0 && (
                   <motion.p className="koszyk-promo-ok" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                    ✓ Kod {promo.trim().toUpperCase()} działa — oszczędzasz {zl(discount)}
+                    {isVoucher
+                      ? <>✓ Voucher {appliedCode} ({zl(promoState.amount)}) zaliczony{fullyCovered ? ' — pokrywa całe zamówienie' : `, do zapłaty ${zl(grandTotal)}`}</>
+                      : <>✓ Kod {appliedCode} działa — oszczędzasz {zl(discount)}</>}
                   </motion.p>
+                )}
+                {isVoucher && promoState.amount > discount && (
+                  <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>
+                    Voucher jest jednorazowy — niewykorzystana część ({zl(promoState.amount - discount)}) przepada.
+                  </p>
                 )}
                 <AnimatePresence>
                   {fly && (
@@ -309,26 +326,29 @@ export default function Koszyk() {
                   <div className="koszyk-pay-method is-active">
                     <span className="koszyk-pay-radio" />
                     <div>
-                      <b>Płatność online</b>
-                      <p className="muted">BLIK, karta, szybki przelew — Tpay</p>
+                      <b>{fullyCovered ? 'Opłacone voucherem' : 'Płatność online'}</b>
+                      <p className="muted">{fullyCovered ? `Voucher ${appliedCode} pokrywa całe zamówienie` : 'BLIK, karta, szybki przelew — Tpay'}</p>
                     </div>
                     <span className="koszyk-pay-total">{zl(grandTotal)}</span>
                   </div>
                 </div>
                 {discount > 0 && (
                   <p className="koszyk-promo-ok" style={{ marginBottom: 12 }}>
-                    ✓ Rabat {promo.trim().toUpperCase()} (−{promoState.percent}%) uwzględniony — taniej o {zl(discount)}
+                    ✓ {discountLabel} uwzględniony — taniej o {zl(discount)}
                   </p>
                 )}
                 <p className="muted" style={{ fontSize: 13 }}>
-                  Po kliknięciu „Zapłać" przeniesiemy Cię do bezpiecznej bramki Tpay. Voucher PDF
-                  wyślemy na e-mail od razu po zaksięgowaniu płatności.
+                  {fullyCovered
+                    ? 'Nie musisz nic dopłacać. Po potwierdzeniu zamówienia voucher PDF wyślemy na Twój e-mail.'
+                    : 'Po kliknięciu „Zapłać" przeniesiemy Cię do bezpiecznej bramki Tpay. Voucher PDF wyślemy na e-mail od razu po zaksięgowaniu płatności.'}
                 </p>
                 {err && <p className="koszyk-err">{err}</p>}
                 <div className="koszyk-actions">
                   <button className="btn btn-ghost" onClick={() => goStep(2)} disabled={payBusy}>← Wróć</button>
                   <button className="btn btn-red koszyk-paybtn" onClick={payNow} disabled={payBusy}>
-                    {payBusy ? <><span className="koszyk-spin" /> Przekierowuję do Tpay…</> : `Zapłać ${zl(grandTotal)}`}
+                    {payBusy
+                      ? <><span className="koszyk-spin" /> {fullyCovered ? 'Realizuję zamówienie…' : 'Przekierowuję do Tpay…'}</>
+                      : fullyCovered ? 'Potwierdź zamówienie' : `Zapłać ${zl(grandTotal)}`}
                   </button>
                 </div>
               </Reveal>

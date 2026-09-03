@@ -5,7 +5,7 @@
 //   1. podpis X-JWS-Signature (RS256, certyfikat Tpay z x5u, łańcuch do root CA Tpay) — wymagany
 //   2. opcjonalnie md5sum (gdy ustawione TPAY_MERCHANT_ID + TPAY_SECURITY_CODE)
 //   3. kwota i identyfikator zamówienia porównywane z bazą — kwoty NIGDY nie bierzemy z żądania
-import { db, fulfillOrder } from '../_shared/core.ts'
+import { db, rpc, fulfillOrder } from '../_shared/core.ts'
 import { verifyTpayJws, md5 } from '../_shared/tpay.ts'
 
 const MERCHANT_ID = Deno.env.get('TPAY_MERCHANT_ID') ?? ''
@@ -56,6 +56,8 @@ Deno.serve(async (req) => {
     await db(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'chargeback' }) })
     if (order.voucher_id)
       await db(`vouchers?id=eq.${order.voucher_id}`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) })
+    // bonu użytego przy tym zamówieniu NIE przywracamy — o zwrocie decyduje biuro (widać go przy zamówieniu)
+    if (order.discount_kind === 'voucher') console.warn(`tpay-notify: chargeback z bonem ${order.discount_code} (#${order.number})`)
     console.warn(`tpay-notify: chargeback zamówienia #${order.number}`)
     return TRUE()
   }
@@ -65,6 +67,8 @@ Deno.serve(async (req) => {
       method: 'PATCH',
       body: JSON.stringify({ payment_error: `tr_status=${trStatus} ${f.get('tr_error') || ''}`.trim() }),
     })
+    // płatność nieudana — bon kwotowy wraca do obiegu od razu, bez czekania na wygaśnięcie rezerwacji
+    if (order.discount_kind === 'voucher') await rpc('voucher_release', { p_order: order.id })
     return TRUE() // powiadomienie przyjęte, ale zamówienie nieopłacone
   }
 

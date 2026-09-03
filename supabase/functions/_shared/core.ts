@@ -32,6 +32,24 @@ export async function db(path: string, init: RequestInit = {}) {
   return t ? JSON.parse(t) : null
 }
 
+/**
+ * Wywołanie funkcji SQL (`/rest/v1/rpc/...`). Operacje na bonach kwotowych muszą być atomowe,
+ * a tego nie da się zrobić kilkoma zapytaniami REST — stąd funkcje w bazie (migracja 004).
+ * Zwraca `{ ok, data, error }` zamiast rzucać, bo błąd („bon zajęty") jest tu normalną odpowiedzią.
+ */
+export async function rpc(fn: string, args: Record<string, unknown>): Promise<{ ok: boolean; data?: any; error?: string }> {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+  })
+  const txt = await r.text()
+  let body: any = null
+  try { body = txt ? JSON.parse(txt) : null } catch { /* nie-JSON zostaje w tekście */ }
+  if (!r.ok) return { ok: false, error: String(body?.message || txt || r.status) }
+  return { ok: true, data: body }
+}
+
 // UWAGA: żądania do Storage z wnętrza funkcji edge wymagają nagłówka `apikey`,
 // sam Authorization nie wystarcza (Kong zwraca 400).
 export async function storageGet(path: string): Promise<ArrayBuffer> {
@@ -180,6 +198,8 @@ type OrderRow = {
   id: string; number: number; status: string; total: number
   customer_name: string; customer_email: string; customer_phone?: string
   gift_for?: string; notes?: string; voucher_id?: string | null
+  subtotal_grosze?: number | null; discount_grosze?: number | null
+  discount_code?: string | null; discount_kind?: string | null
   items: { product_id: string; name: string; variant: string; price: number; qty: number }[]
 }
 
@@ -231,6 +251,28 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
     }),
   })
 
+  // Bon kwotowy użyty przy tym zamówieniu wypalamy dopiero teraz, gdy płatność jest pewna.
+  // Funkcja SQL jest idempotentna, więc powtórka powiadomienia z Tpay niczego nie zdejmie drugi raz.
+  // Błąd tutaj nie może wywrócić realizacji — zamówienie jest opłacone, voucher już wystawiony.
+  if (order.discount_kind === 'voucher') {
+    try {
+      const red = await rpc('voucher_redeem', { p_order: order.id })
+      const st = red.data?.[0]
+      if (!red.ok || !st || (st.v_status !== 'redeemed' && st.v_status !== 'already'))
+        console.error(`bon: #${order.number} nie wypalony (${red.error || st?.v_status || 'brak odpowiedzi'})`)
+      else
+        console.log(`bon: #${order.number} ${st.v_code} ${st.v_status}`)
+    } catch (e) {
+      console.error('bon: wyjątek przy wypalaniu', e)
+    }
+  }
+
+  const discountRow = (order.discount_grosze || 0) > 0 ? `
+    <tr>
+      <td style="padding:10px 0;color:#7ddc9a;font-size:14px;border-bottom:1px solid #2a2a30">${order.discount_kind === 'voucher' ? 'Voucher' : 'Rabat'} ${esc(order.discount_code || '')}</td>
+      <td style="padding:10px 0;color:#7ddc9a;font-size:14px;border-bottom:1px solid #2a2a30" align="right">−${zl(order.discount_grosze!)}</td>
+    </tr>` : ''
+
   const itemsRows = order.items.map((it) => `
     <tr>
       <td style="padding:10px 0;color:#fff;font-size:14px;border-bottom:1px solid #2a2a30">${esc(it.name)}${it.variant ? ` <span style="color:#8a8a92">· ${esc(it.variant)}</span>` : ''} <span style="color:#8a8a92">× ${it.qty}</span></td>
@@ -244,7 +286,7 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
       Twoje zamówienie <b style="color:#fff">#${order.number}</b> zostało opłacone.
       W załączniku znajdziesz <b style="color:#fff">voucher PDF</b> — gotowy do wydruku lub podarowania.
     </p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsRows}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsRows}${discountRow}
       <tr><td style="padding:14px 0;color:#8a8a92;font-size:13px;letter-spacing:1px">RAZEM</td>
       <td style="padding:14px 0;color:#fff;font-size:20px;font-weight:bold" align="right">${zl(order.total)}</td></tr>
     </table>
@@ -270,7 +312,7 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
       ${order.gift_for ? `<br>Voucher dla: <b style="color:#fff">${esc(order.gift_for)}</b>` : ''}
       ${order.notes ? `<br>${esc(order.notes)}` : ''}
     </p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsRows}</table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsRows}${discountRow}</table>
     <div style="color:#8a8a92;font-size:13px;margin-top:18px">Kod vouchera: <b style="color:#fff">${code}</b> · ważny do ${validPL}</div>
     ${pdfPath ? '' : '<div style="color:#ff6b6b;font-size:13px;margin-top:10px">UWAGA: nie udało się wygenerować PDF (brak szablonu?) — wyślij voucher ręcznie.</div>'}
     ${sent.ok ? '' : '<div style="color:#ff6b6b;font-size:13px;margin-top:10px">UWAGA: e-mail do klienta nie został wysłany!</div>'}

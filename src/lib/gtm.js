@@ -31,6 +31,7 @@ export const gtmPurchase = (order) =>
     ecommerce: {
       transaction_id: String(order.number),
       currency: 'PLN',
+      ...(order.discount_code ? { coupon: order.discount_code } : {}),
       value: (order.total || 0) / 100,
       items: (order.items || []).map(item),
     },

@@ -3,6 +3,7 @@ import { adminApi, zl } from '../lib/api.js'
 import { DEFAULTS } from '../data/defaults.js'
 import VisualEditor from './VisualEditor.jsx'
 import Templates from './Templates.jsx'
+import Vouchers from './Vouchers.jsx'
 import './admin.css'
 
 const TABS = [
@@ -129,6 +130,11 @@ function Stats() {
     { label: 'Vouchery aktywne', value: s.vouchers_active },
     { label: 'Vouchery użyte', value: s.vouchers_used },
     { label: 'Przychód łącznie', value: zl(s.revenue) },
+    // bony kwotowe = nasze zobowiązanie: klient ma je opłacone i może nimi zapłacić w koszyku
+    ...(s.bony_count ? [
+      { label: `Bony kwotowe aktywne (${s.bony_active})`, value: zl(s.bony_value_active) },
+      { label: 'Bony zrealizowane w koszyku', value: zl(s.bony_discount_given) },
+    ] : []),
   ]
   return (
     <div>
@@ -208,16 +214,17 @@ function PromoCodes() {
       {err && <p className="adm-err">{err}</p>}
       <div className="adm-table-wrap" style={{ marginTop: 18 }}>
         <table className="adm-table">
-          <thead><tr><th>Kod</th><th>Rabat</th><th>Min. zakupy</th><th>Użyto</th><th>Notatka</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Kod</th><th>Rabat</th><th>Min. zakupy</th><th>Użyto</th><th>Rabat łącznie</th><th>Notatka</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            {list === null && <tr><td colSpan={7} className="adm-muted">Ładowanie…</td></tr>}
-            {list && !list.length && <tr><td colSpan={7} className="adm-muted">Brak kodów — dodaj pierwszy powyżej</td></tr>}
+            {list === null && <tr><td colSpan={8} className="adm-muted">Ładowanie…</td></tr>}
+            {list && !list.length && <tr><td colSpan={8} className="adm-muted">Brak kodów — dodaj pierwszy powyżej</td></tr>}
             {(list || []).map((c) => (
               <tr key={c.code} style={{ opacity: c.active ? 1 : 0.55 }}>
                 <td><b>{c.code}</b></td>
                 <td>−{c.percent}%</td>
                 <td>{c.min_grosze ? `od ${zl(c.min_grosze)}` : '—'}</td>
                 <td>{c.uses}×</td>
+                <td>{c.saved_grosze ? zl(c.saved_grosze) : '—'}</td>
                 <td className="adm-muted">{c.note || '—'}</td>
                 <td>
                   <button type="button" className={`adm-pill ${c.active ? 'is-on' : ''}`} onClick={() => toggle(c)}>
@@ -508,123 +515,6 @@ function Orders() {
                 </tr>
               ))}
               {rows.length === 0 && <tr><td colSpan={7} className="adm-muted">Brak zamówień</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ---------- Vouchery ---------- */
-
-function Vouchers() {
-  const [rows, setRows] = useState(null)
-  const [status, setStatus] = useState('')
-  const [search, setSearch] = useState('')
-  const [product, setProduct] = useState('')
-  const [products, setProducts] = useState([])
-  const [gen, setGen] = useState({ product_id: '', variant: '', count: 5, prefix: '' })
-  const [genBusy, setGenBusy] = useState(false)
-  const [genOpen, setGenOpen] = useState(false)
-
-  useEffect(() => { adminApi('products.list').then(setProducts).catch(() => {}) }, [])
-
-  // only imported/generated codes here — vouchers from shop purchases live with their orders
-  const load = () => adminApi('vouchers.list', { status, search, product, source: 'import' }).then(setRows).catch(() => {})
-  useEffect(() => {
-    const t = setTimeout(load, 250)
-    return () => clearTimeout(t)
-  }, [status, search, product])
-
-  const genProduct = products.find((p) => p.id === gen.product_id)
-
-  async function generate() {
-    if (!gen.product_id) return alert('Wybierz produkt')
-    setGenBusy(true)
-    try {
-      const d = await adminApi('vouchers.generate', gen)
-      alert(`Wygenerowano ${d.codes.length} kodów:\n\n${d.codes.join('\n')}`)
-      load()
-    } catch (e) { alert(e.message) }
-    setGenBusy(false)
-  }
-
-  async function setVoucherStatus(v, s) {
-    setRows((r) => r.map((x) => (x.id === v.id ? { ...x, status: s } : x)))
-    try { await adminApi('vouchers.update', { id: v.id, status: s }) } catch (e) { alert(e.message); load() }
-  }
-
-  async function openPdf(v) {
-    if (!v.pdf_path) return alert('Brak PDF dla tego vouchera')
-    const d = await adminApi('voucherPdfUrl', { path: v.pdf_path })
-    if (d.url) window.open(d.url, '_blank')
-  }
-
-  return (
-    <div>
-      <div className="adm-bar">
-        <div>
-          <h2 className="adm-h">Vouchery</h2>
-          <p className="adm-muted">Kody z importu i wygenerowane. Vouchery z zakupów znajdziesz przy zamówieniach.</p>
-        </div>
-        <div className="adm-filters">
-          <input placeholder="Szukaj: kod / odbiorca…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Status: wszystkie</option>
-            <option value="active">Aktywne</option>
-            <option value="used">Użyte</option>
-            <option value="expired">Wygasłe</option>
-            <option value="cancelled">Anulowane</option>
-          </select>
-          <select value={product} onChange={(e) => setProduct(e.target.value)}>
-            <option value="">Produkt: wszystkie</option>
-            {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <button className="btn btn-red" onClick={() => setGenOpen(!genOpen)}>{genOpen ? 'Zamknij' : '+ Dodaj kody'}</button>
-        </div>
-      </div>
-      {genOpen && (
-        <div className="adm-card adm-gen">
-          <div className="field">
-            <label>Produkt</label>
-            <select value={gen.product_id} onChange={(e) => setGen({ ...gen, product_id: e.target.value, variant: '' })}>
-              <option value="">— wybierz —</option>
-              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
-          <div className="field">
-            <label>Wariant</label>
-            <select value={gen.variant} onChange={(e) => setGen({ ...gen, variant: e.target.value })}>
-              <option value="">— bez wariantu —</option>
-              {(genProduct?.variants || []).map((v) => <option key={v.laps} value={v.laps}>{v.laps}</option>)}
-            </select>
-          </div>
-          <div className="field"><label>Ilość</label><input type="number" min="1" max="100" value={gen.count} onChange={(e) => setGen({ ...gen, count: +e.target.value })} /></div>
-          <div className="field"><label>Prefiks (opcjonalnie)</label><input value={gen.prefix} placeholder="auto" onChange={(e) => setGen({ ...gen, prefix: e.target.value })} /></div>
-          <button className="btn btn-red" disabled={genBusy} onClick={generate}>{genBusy ? 'Generowanie…' : 'Generuj'}</button>
-        </div>
-      )}
-      {!rows ? <p className="adm-muted">Ładowanie…</p> : (
-        <div className="adm-table-wrap adm-card">
-          <table className="adm-table">
-            <thead><tr><th>Kod</th><th>Odbiorca</th><th>Zawartość</th><th>Ważny do</th><th>Status</th><th>PDF</th><th></th></tr></thead>
-            <tbody>
-              {rows.map((v) => (
-                <tr key={v.id}>
-                  <td><b className="adm-code">{v.code}</b></td>
-                  <td>{v.recipient || <span className="adm-muted">—</span>}</td>
-                  <td className="adm-muted" style={{ whiteSpace: 'pre-line', fontSize: 12 }}>{v.items_text}</td>
-                  <td>{v.valid_until?.split('-').reverse().join('.')}</td>
-                  <td><span className={`adm-badge is-${v.status}`}>{v.status}</span></td>
-                  <td>{v.pdf_path ? <button className="adm-link" onClick={() => openPdf(v)}>Otwórz</button> : '—'}</td>
-                  <td>
-                    {v.status === 'active' && <button className="adm-link" onClick={() => setVoucherStatus(v, 'used')}>Oznacz użyty</button>}
-                    {v.status === 'used' && <button className="adm-link" onClick={() => setVoucherStatus(v, 'active')}>Przywróć</button>}
-                  </td>
-                </tr>
-              ))}
-              {rows.length === 0 && <tr><td colSpan={7} className="adm-muted">Brak voucherów</td></tr>}
             </tbody>
           </table>
         </div>
