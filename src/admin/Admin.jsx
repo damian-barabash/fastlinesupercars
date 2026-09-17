@@ -279,6 +279,9 @@ function Products() {
       images: [...(p.images || [])],
       variants: (p.variants || []).map((v) => ({ laps: v.laps, priceZl: toZl(v.price) })),
       priceFromZl: isNew ? '' : toZl(p.price_from),
+      openAmount: p.amount_min != null,
+      amountMinZl: p.amount_min != null ? toZl(p.amount_min) : '200',
+      amountMaxZl: p.amount_max != null ? toZl(p.amount_max) : '10000',
     })
   }
 
@@ -302,10 +305,16 @@ function Products() {
         .filter((v) => v.laps.trim())
         .map((v) => ({ laps: v.laps.trim(), price: toGr(v.priceZl) }))
       const price_from = variants.length ? Math.min(...variants.map((v) => v.price)) : toGr(edit.priceFromZl)
+      // kwota wpisywana przez klienta: tylko bez wariantów, pełne złote, min ≤ domyślna ≤ max
+      const open = edit.openAmount && !variants.length
+      const amount_min = open ? Math.round(toGr(edit.amountMinZl) / 100) * 100 : null
+      const amount_max = open ? Math.round(toGr(edit.amountMaxZl) / 100) * 100 : null
+      if (open && (amount_min <= 0 || amount_max < amount_min || price_from < amount_min || price_from > amount_max || price_from % 100))
+        { setBusy(false); return alert('Kwota dowolna: minimum > 0, domyślna w pełnych złotych i pomiędzy minimum a maksimum') }
       const p = {
         id, name: edit.name, subtitle: edit.subtitle, description: edit.description,
         images: edit.images, cover: edit.cover || edit.images[0] || '',
-        voucher_template: edit.voucher_template, variants, price_from,
+        voucher_template: edit.voucher_template, variants, price_from, amount_min, amount_max,
         sort: edit.sort, active: edit.active, category: edit.category,
         short_specs: edit.short_specs, full_specs: edit.full_specs, tracks: edit.tracks,
       }
@@ -362,9 +371,31 @@ function Products() {
             <button className="adm-btn-sec" onClick={() => setEdit({ ...edit, variants: [...edit.variants, { laps: '', priceZl: '' }] })}>+ Dodaj wariant</button>
             {edit.variants.length === 0 && (
               <div className="adm-price-input" style={{ marginTop: 10 }}>
-                <label style={{ marginRight: 10 }}>Cena stała:</label>
+                <label style={{ marginRight: 10 }}>{edit.openAmount ? 'Kwota domyślna:' : 'Cena stała:'}</label>
                 <input value={edit.priceFromZl} onChange={(e) => setEdit({ ...edit, priceFromZl: e.target.value })} />
                 <span>zł</span>
+              </div>
+            )}
+            {edit.variants.length === 0 && (
+              <div style={{ marginTop: 12 }}>
+                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input type="checkbox" checked={edit.openAmount} onChange={(e) => setEdit({ ...edit, openAmount: e.target.checked })} />
+                  Klient sam wpisuje kwotę (np. voucher na dowolną wartość)
+                </label>
+                {edit.openAmount && (
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 10 }}>
+                    <div className="adm-price-input">
+                      <label style={{ marginRight: 10 }}>Minimum:</label>
+                      <input value={edit.amountMinZl} onChange={(e) => setEdit({ ...edit, amountMinZl: e.target.value })} />
+                      <span>zł</span>
+                    </div>
+                    <div className="adm-price-input">
+                      <label style={{ marginRight: 10 }}>Maksimum:</label>
+                      <input value={edit.amountMaxZl} onChange={(e) => setEdit({ ...edit, amountMaxZl: e.target.value })} />
+                      <span>zł</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {edit.variants.length > 0 && <p className="adm-muted">„Cena od" na stronie = najtańszy wariant.</p>}

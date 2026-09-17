@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useProducts, productPrice } from '../lib/products.js'
+import { useProducts, productPrice, isOpenAmount, AMOUNT_MAX_DEFAULT } from '../lib/products.js'
 import { addToCart } from '../lib/cart.js'
 import { gtmAddToCart } from '../lib/gtm.js'
 import { zl } from '../lib/api.js'
@@ -18,9 +18,21 @@ export default function Produkt() {
   const [variant, setVariant] = useState('')
   const [img, setImg] = useState(0)
   const [added, setAdded] = useState(false)
+  const [amountTxt, setAmountTxt] = useState(null)   // null = kwota domyślna produktu
 
   const chosen = variant || p?.variants?.[0]?.laps || ''
-  const price = useMemo(() => (p ? productPrice(p, chosen) : 0), [p, chosen])
+  const open = isOpenAmount(p)
+  const minZl = open ? p.amount_min / 100 : 0
+  const maxZl = open ? (p.amount_max ?? AMOUNT_MAX_DEFAULT) / 100 : 0
+  const amountStr = amountTxt ?? (open ? String(p.price_from / 100) : '')
+  const amountZl = amountStr === '' ? NaN : Number(amountStr)
+  const amountErr = !open ? '' :
+    !Number.isFinite(amountZl) ? 'Wpisz kwotę vouchera' :
+    amountZl < minZl ? `Minimalna kwota to ${zl(minZl * 100)}` :
+    amountZl > maxZl ? `Maksymalna kwota to ${zl(maxZl * 100)}` : ''
+  const amount = open && !amountErr ? amountZl * 100 : undefined
+  const price = useMemo(() => (p ? productPrice(p, chosen, amount) : 0), [p, chosen, amount])
+  const presets = open ? [300, 500, p.price_from / 100, 1500].filter((v, i, a) => v >= minZl && v <= maxZl && a.indexOf(v) === i).sort((a, b) => a - b) : []
   const others = useMemo(() => products.filter((x) => x.id !== id && x.id !== 'voucher').slice(0, 3), [products, id])
 
   if (!p) {
@@ -33,7 +45,8 @@ export default function Produkt() {
   }
 
   function add(goCheckout) {
-    const line = { product_id: p.id, variant: p.variants?.length ? chosen : '', name: p.name }
+    if (amountErr) return
+    const line = { product_id: p.id, variant: !open && p.variants?.length ? chosen : '', name: p.name, ...(open ? { amount } : {}) }
     addToCart(line)
     gtmAddToCart({ ...line, price, qty: 1 })
     setAdded(true)
@@ -88,16 +101,53 @@ export default function Produkt() {
               </div>
             )}
 
+            {open && (
+              <div className="produkt-variants">
+                <div className="produkt-variants-label">Wybierz lub wpisz kwotę:</div>
+                <div className="produkt-variants-grid produkt-amount-presets">
+                  {presets.map((v) => (
+                    <button
+                      key={v}
+                      className={`produkt-variant ${amountZl === v ? 'is-active' : ''}`}
+                      onClick={() => setAmountTxt(String(v))}
+                    >
+                      <span className="produkt-variant-laps">{zl(v * 100)}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="produkt-seat muted">Minimalna wartość vouchera: {zl(minZl * 100)}. Obdarowany wykorzysta ją na dowolny przejazd.</p>
+              </div>
+            )}
+
             <div className="produkt-buy carbon">
               <div>
-                <div className="produkt-price-label">Cena</div>
-                <div className="produkt-price">{zl(price)}</div>
+                <div className="produkt-price-label">{open ? 'Wartość vouchera' : 'Cena'}</div>
+                {open ? (
+                  <label className={`produkt-amount ${amountErr ? 'is-bad' : ''}`}>
+                    <input
+                      className="produkt-price"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      aria-label="Wartość vouchera w złotych"
+                      aria-invalid={!!amountErr}
+                      value={amountStr}
+                      size={Math.max(3, amountStr.length)}
+                      onChange={(e) => setAmountTxt(e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 5))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') add(false) }}
+                    />
+                    <span className="produkt-price">zł</span>
+                  </label>
+                ) : (
+                  <div className="produkt-price">{zl(price)}</div>
+                )}
+                {amountErr && <div className="produkt-amount-err" role="alert">{amountErr}</div>}
               </div>
               <div className="produkt-buy-btns">
-                <button className={`btn btn-red ${added ? 'is-added' : ''}`} onClick={() => add(false)}>
+                <button className={`btn btn-red ${added ? 'is-added' : ''}`} onClick={() => add(false)} disabled={!!amountErr}>
                   {added ? '✓ Dodano' : 'Dodaj do koszyka'}
                 </button>
-                <button className="btn btn-ghost" onClick={() => add(true)}>Kup teraz</button>
+                <button className="btn btn-ghost" onClick={() => add(true)} disabled={!!amountErr}>Kup teraz</button>
               </div>
             </div>
 

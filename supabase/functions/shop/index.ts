@@ -3,7 +3,7 @@
 //        pay — WYŁĄCZNIE tryb testowy, za flagą SHOP_TEST_PAYMENTS=1
 //
 // Zasada: ceny liczy serwer z tabeli `products`. Klient przysyła tylko id produktu,
-// wariant i sztuki — dzięki temu nowy produkt dodany w panelu działa od razu,
+// wariant i sztuki (a przy produkcie z dowolną kwotą — kwotę, sprawdzaną z granicami z bazy) — dzięki temu nowy produkt dodany w panelu działa od razu,
 // a przesłanej z przeglądarki kwoty nie ma jak podrobić.
 //
 // Jedno pole „kod" w koszyku obsługuje dwa rodzaje kodów (naraz działa tylko jeden):
@@ -11,13 +11,14 @@
 //   * `vouchers` z `kind='amount'` — bon kwotowy, jednorazowy (np. 300 zł na koszyk).
 //     Bon jest rezerwowany przy zakładaniu zamówienia i wypalany dopiero po potwierdzonej
 //     płatności; gdy pokrywa całość, zamówienie realizuje się od razu, bez bramki.
-import { CORS, J, db, esc, rpc, SITE, SB_URL, CONTACT_TO, sendMail, mailShell, fulfillOrder } from '../_shared/core.ts'
+import { CORS, J, db, esc, rpc, SITE, SB_URL, CONTACT_TO, sendMail, mailShell, fulfillOrder, zl } from '../_shared/core.ts'
 import { tpayConfigured, tpayCreateTransaction } from '../_shared/tpay.ts'
 
 const TEST_PAYMENTS = Deno.env.get('SHOP_TEST_PAYMENTS') === '1'
 const NOTIFY_URL = `${SB_URL}/functions/v1/tpay-notify`
 
-type Item = { product_id: string; variant?: string; qty?: number }
+// `amount` (grosze) — tylko dla produktów z kwotą wybieraną przez klienta (`products.amount_min`)
+type Item = { product_id: string; variant?: string; qty?: number; amount?: number }
 type Customer = { name: string; email: string; phone?: string }
 type CheckoutBody = { customer: Customer; gift_for?: string; items: Item[]; promo?: string; return_origin?: string }
 
@@ -142,7 +143,19 @@ async function buildOrder(body: CheckoutBody): Promise<Built> {
     if (!p) return { error: J({ error: `Nieznany produkt: ${it.product_id}` }, 400) }
     const qty = Math.min(Math.max(1, Math.floor(Number(it.qty) || 1)), 10)
     let price = p.price_from, variant = ''
-    if (Array.isArray(p.variants) && p.variants.length) {
+    if (p.amount_min != null) {
+      // kwota od klienta: pełne złote, w granicach ustawionych przy produkcie
+      const amount = Number(it.amount ?? p.price_from)
+      const max = p.amount_max ?? 1000000
+      if (!Number.isInteger(amount) || amount % 100 !== 0)
+        return { error: J({ error: `Podaj kwotę w pełnych złotych: ${p.name}` }, 400) }
+      if (amount < p.amount_min)
+        return { error: J({ error: `Minimalna kwota dla „${p.name}" to ${zl(p.amount_min)}` }, 400) }
+      if (amount > max)
+        return { error: J({ error: `Maksymalna kwota dla „${p.name}" to ${zl(max)}` }, 400) }
+      // trafia do PDF-a i maili jako „Voucher — Wartość 500 zł” (zwykłe spacje: czcionka PDF)
+      price = amount; variant = `Wartość ${(amount / 100).toLocaleString('pl-PL').replace(/\s/g, ' ')} zł`
+    } else if (Array.isArray(p.variants) && p.variants.length) {
       const v = p.variants.find((v: { laps: string }) => v.laps === it.variant) || null
       if (!v) return { error: J({ error: `Wybierz liczbę okrążeń dla: ${p.name}` }, 400) }
       price = v.price; variant = v.laps

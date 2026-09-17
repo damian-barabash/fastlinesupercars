@@ -795,6 +795,8 @@
   ],
   "sort": 10,
   "active": true,
-  "car_list": []
+  "car_list": [],
+  "amount_min": 20000,
+  "amount_max": 1000000
  }
 ]

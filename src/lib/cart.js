@@ -1,4 +1,5 @@
 // Cart store — localStorage + custom event
+import { productPrice } from './products.js'
 const KEY = 'fs_cart_v1'
 
 export function getCart() {
@@ -12,7 +13,9 @@ function save(items) {
 
 export function addToCart(item) {
   const items = getCart()
-  const found = items.find((i) => i.product_id === item.product_id && i.variant === item.variant)
+  // ta sama kwota vouchera = ta sama pozycja; inna kwota = osobna linia
+  const found = items.find((i) => i.product_id === item.product_id && i.variant === item.variant
+    && (i.amount ?? null) === (item.amount ?? null))
   if (found) found.qty = Math.min(found.qty + (item.qty || 1), 10)
   else items.push({ ...item, qty: item.qty || 1 })
   save(items)
@@ -38,12 +41,7 @@ export function cartTotal(items, products) {
   return items.reduce((sum, it) => {
     const p = products.find((x) => x.id === it.product_id)
     if (!p) return sum
-    let price = p.price_from
-    if (p.variants?.length) {
-      const v = p.variants.find((v) => v.laps === it.variant)
-      price = v ? v.price : price
-    }
-    return sum + price * it.qty
+    return sum + productPrice(p, it.variant, it.amount) * it.qty
   }, 0)
 }
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { getCart, updateQty, removeFromCart, clearCart, cartTotal } from '../lib/cart.js'
-import { useProducts, productPrice } from '../lib/products.js'
+import { useProducts, productPrice, isOpenAmount, amountLabel } from '../lib/products.js'
 import { shop, zl } from '../lib/api.js'
 import { Reveal } from '../components/Reveal.jsx'
 import { gtmBeginCheckout } from '../lib/gtm.js'
@@ -61,7 +61,9 @@ export default function Koszyk() {
 
   const rows = items.map((it) => {
     const p = products.find((x) => x.id === it.product_id)
-    return { ...it, p, price: p ? productPrice(p, it.variant) : 0 }
+    const price = p ? productPrice(p, it.variant, it.amount) : 0
+    // przy voucherze z dowolną kwotą w miejscu wariantu pokazujemy wybraną wartość
+    return { ...it, p, price, variant: isOpenAmount(p) ? amountLabel(price) : it.variant }
   })
 
   function goStep(n) {
@@ -135,7 +137,7 @@ export default function Koszyk() {
       const d = await shop('checkout', {
         customer: { name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim() },
         gift_for: form.gift ? form.gift_for.trim() : '',
-        items: items.map((i) => ({ product_id: i.product_id, variant: i.variant, qty: i.qty })),
+        items: items.map((i) => ({ product_id: i.product_id, variant: i.variant, qty: i.qty, ...(i.amount != null ? { amount: i.amount } : {}) })),
         ...(promoState?.discount ? { promo: promo.trim() } : {}),
         return_origin: window.location.origin,   // serwer i tak przyjmie tylko adres z białej listy
       })

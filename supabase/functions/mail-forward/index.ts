@@ -18,6 +18,8 @@ const WEBHOOK_SECRET = Deno.env.get('RESEND_WEBHOOK_SECRET') ?? ''
 const FORWARD_TO = (Deno.env.get('MAIL_FORWARD_TO') ?? 'lukasz.kazmierczak@greywolfgroup.pl')
   .split(',').map((s) => s.trim()).filter(Boolean)
 const FORWARD_FROM = Deno.env.get('MAIL_FORWARD_FROM') ?? 'rezerwacje@fastlinesupercars.pl'
+// Stała nazwa nadawcy w skrzynce biura — kto naprawdę pisze, widać w ramce listu i w Reply-To.
+const FORWARD_NAME = Deno.env.get('MAIL_FORWARD_NAME') ?? 'Rezerwacje FastlineSupercars'
 
 // Załączniki: Resend przyjmuje do 40 MB na list, base64 puchnie o ~1/3 — tniemy wcześniej.
 const MAX_ATTACH_BYTES = 12 * 1024 * 1024
@@ -37,13 +39,6 @@ const esc = (s: string) =>
 function bareAddr(v: string): string {
   const m = String(v || '').match(/<([^>]+)>/)
   return (m ? m[1] : String(v || '')).trim().toLowerCase()
-}
-
-/** Nazwa wyświetlana nadawcy, jeśli jest; inaczej sam adres. */
-function displayName(v: string): string {
-  const m = String(v || '').match(/^\s*"?([^"<]*?)"?\s*<[^>]+>\s*$/)
-  const name = m ? m[1].trim() : ''
-  return name || bareAddr(v)
 }
 
 /** Nazwa w polu `from` musi przejść przez parser adresu — cudzysłowy i nawiasy wycinamy. */
@@ -207,7 +202,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: `${safeName(displayName(sender))} (via ${rcpt}) <${FORWARD_FROM}>`,
+        from: `${safeName(FORWARD_NAME)} <${FORWARD_FROM}>`,
         to: FORWARD_TO,
         subject,
         html: body,
