@@ -78,6 +78,19 @@
   .koszyk-promo .field { flex: 1 1 100%; max-width: none; }
   .koszyk-promo-btn { flex: 1 1 100%; }
 }
+.koszyk-codes { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-width: 520px; }
+.koszyk-codes li {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
+  padding: 9px 10px 9px 14px; border: 1px solid #bfe3c9; background: #f1faf3; font-size: 14px;
+}
+.koszyk-code-name { font-weight: 700; letter-spacing: .06em; color: #1d7a3a; }
+.koszyk-code-info { color: #3b4a40; flex: 1; }
+.koszyk-codes button {
+  border: 0; background: none; cursor: pointer; color: #6b6b72; font-size: 14px;
+  width: 30px; height: 30px; display: grid; place-items: center;
+}
+.koszyk-codes button:hover:not(:disabled) { color: var(--red); }
+.koszyk-codes small { flex-basis: 100%; color: #6b6b72; font-size: 12.5px; }
 .koszyk-promo-ok { color: #1d7a3a; font-size: 13.5px; font-weight: 600; margin-top: 8px; }
 .koszyk-spin {
   width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent;

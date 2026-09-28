@@ -41,11 +41,12 @@ export default function Koszyk() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', gift_for: '', gift: false, terms: false })
   const [err, setErr] = useState('')
   const [promo, setPromo] = useState('')
-  // {kind:'promo'|'voucher', code, discount, percent?, amount?} albo {error}
-  const [promoState, setPromoState] = useState(null)
+  // zastosowane kody, rabaty się sumują: [{kind:'promo'|'voucher', code, discount, percent?, amount?}]
+  const [codes, setCodes] = useState([])
+  const [promoErr, setPromoErr] = useState('')
   const [promoBusy, setPromoBusy] = useState(false)
   const [payBusy, setPayBusy] = useState(false)
-  const [pending, setPending] = useState(null)       // rabat w locie do kwoty
+  const [pending, setPending] = useState(null)       // lista kodów czekająca, aż rabat doleci do kwoty
   const [fly, setFly] = useState(null)
   const promoRef = useRef(null)
   const totalRef = useRef(null)
@@ -77,52 +78,79 @@ export default function Koszyk() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // Serwer zawsze wycenia CAŁĄ listę kodów naraz: bony odejmują się od tego, co zostało po
+  // kodach procentowych, więc rabat jednego kodu zależy od pozostałych.
+  const checkCodes = (list) => shop('checkPromo', { codes: list, subtotal: total })
+
   async function applyPromo(e) {
     e?.preventDefault?.()
-    if (!promo.trim() || promoBusy) return
+    const code = promo.trim().toUpperCase().replace(/\s+/g, '')
+    if (!code || promoBusy) return
+    if (codes.some((c) => c.code === code)) { setPromoErr(`Kod ${code} jest już dodany`); return }
     setPromoBusy(true)
-    setPromoState(null)
+    setPromoErr('')
     try {
-      const d = await shop('checkPromo', { promo: promo.trim(), subtotal: total })
-      if (d.valid) {
-        const applied = { kind: d.kind, code: d.code, discount: d.discount, percent: d.percent, amount: d.amount }
-        // rabat leci z pola kodu prosto w kwotę „Razem", dopiero po wylądowaniu zmienia sumę
-        const from = promoRef.current?.getBoundingClientRect()
-        const to = totalRef.current?.getBoundingClientRect()
-        if (from && to) {
-          setFly({
-            label: `−${zl(d.discount)}`,
-            x: from.left + from.width / 2, y: from.top + from.height / 2,
-            dx: to.left + to.width / 2 - (from.left + from.width / 2),
-            dy: to.top + to.height / 2 - (from.top + from.height / 2),
-          })
-          setPending(applied)
-        } else {
-          setPromoState(applied)
-        }
+      const d = await checkCodes([...codes.map((c) => c.code), code])
+      const applied = d.applied || []
+      setPromoErr((d.errors || []).map((x) => x.error).join(' · ') || (d.valid === false ? d.error || '' : ''))
+      const gain = applied.reduce((s, c) => s + c.discount, 0) - discountSum
+      if (applied.some((c) => c.code === code)) setPromo('')
+      // rabat leci z pola kodu prosto w kwotę „Razem", dopiero po wylądowaniu zmienia sumę
+      const from = promoRef.current?.getBoundingClientRect()
+      const to = totalRef.current?.getBoundingClientRect()
+      if (gain > 0 && from && to) {
+        setFly({
+          label: `−${zl(gain)}`,
+          x: from.left + from.width / 2, y: from.top + from.height / 2,
+          dx: to.left + to.width / 2 - (from.left + from.width / 2),
+          dy: to.top + to.height / 2 - (from.top + from.height / 2),
+        })
+        setPending(applied)
       } else {
-        setPromoState({ error: d.error })
+        setCodes(applied)
       }
     } catch (err) {
-      setPromoState({ error: err.message })
+      setPromoErr(err.message)
     }
     setPromoBusy(false)
   }
 
-  function landPromo() {
-    setFly(null)
-    if (pending) { setPromoState(pending); setPending(null) }
+  async function removeCode(code) {
+    const rest = codes.filter((c) => c.code !== code)
+    setCodes(rest)          // od razu, bez czekania na serwer; rabaty bonów przeliczy odpowiedź
+    setPromoErr('')
+    if (!rest.length) return
+    try {
+      const d = await checkCodes(rest.map((c) => c.code))
+      setCodes(d.applied || [])
+      setPromoErr((d.errors || []).map((x) => x.error).join(' · '))
+    } catch (err) { setPromoErr(err.message) }
   }
 
-  const discount = Math.min(promoState?.discount || 0, total)
+  // koszyk zmienił się po dodaniu kodów (powrót do kroku 1) — rabaty trzeba policzyć od nowa
+  const pricedFor = useRef(total)
+  useEffect(() => {
+    if (pricedFor.current === total) return
+    pricedFor.current = total
+    if (!codes.length) return
+    checkCodes(codes.map((c) => c.code))
+      .then((d) => { setCodes(d.applied || []); setPromoErr((d.errors || []).map((x) => x.error).join(' · ')) })
+      .catch((err) => setPromoErr(err.message))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total])
+
+  function landPromo() {
+    setFly(null)
+    if (pending) { setCodes(pending); setPending(null) }
+  }
+
+  const discountSum = codes.reduce((s, c) => s + c.discount, 0)
+  const discount = Math.min(discountSum, total)
   const grandTotal = total - discount
   const shownTotal = useCountTo(grandTotal)
-  const isVoucher = promoState?.kind === 'voucher'
-  const appliedCode = promoState?.code || promo.trim().toUpperCase()
-  const discountLabel = isVoucher
-    ? `Voucher ${appliedCode}`
-    : `Rabat ${appliedCode}${promoState?.percent ? ` (−${promoState.percent}%)` : ''}`
-  // bon pokrył całe zamówienie — nie ma czego wysyłać do bramki
+  const codeLabel = (c) => c.kind === 'voucher' ? `Voucher ${c.code}` : `Rabat ${c.code}${c.percent ? ` (−${c.percent}%)` : ''}`
+  const onlyVouchers = codes.length > 0 && codes.every((c) => c.kind === 'voucher')
+  // kody pokryły całe zamówienie — nie ma czego wysyłać do bramki
   const fullyCovered = discount > 0 && grandTotal === 0
 
   // Płatność: serwer zakłada zamówienie (ceny liczy sam) i tworzy transakcję Tpay,
@@ -138,7 +166,7 @@ export default function Koszyk() {
         customer: { name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim() },
         gift_for: form.gift ? form.gift_for.trim() : '',
         items: items.map((i) => ({ product_id: i.product_id, variant: i.variant, qty: i.qty, ...(i.amount != null ? { amount: i.amount } : {}) })),
-        ...(promoState?.discount ? { promo: promo.trim() } : {}),
+        ...(codes.length ? { codes: codes.map((c) => c.code) } : {}),
         return_origin: window.location.origin,   // serwer i tak przyjmie tylko adres z białej listy
       })
       clearCart()
@@ -245,15 +273,16 @@ export default function Koszyk() {
                       <b>{zl(r.price * r.qty)}</b>
                     </div>
                   ))}
-                  <AnimatePresence>
-                    {discount > 0 && (
+                  <AnimatePresence initial={false}>
+                    {codes.map((c) => (
                       <motion.div
+                        key={c.code}
                         className="koszyk-sum-row koszyk-sum-discount"
                         initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                       >
-                        <span>{discountLabel}</span><b>−{zl(discount)}</b>
+                        <span>{codeLabel(c)}</span><b>−{zl(c.discount)}</b>
                       </motion.div>
-                    )}
+                    ))}
                   </AnimatePresence>
                   <div className="koszyk-sum-row koszyk-sum-total">
                     <span>Razem</span>
@@ -265,8 +294,8 @@ export default function Koszyk() {
                     <label>Kod rabatowy lub voucher</label>
                     <input
                       value={promo}
-                      onChange={(e) => { setPromo(e.target.value); setPromoState(null); setPending(null) }}
-                      placeholder="np. FAST albo BON-XXXX-XXXX"
+                      onChange={(e) => { setPromo(e.target.value); setPromoErr('') }}
+                      placeholder={codes.length ? 'Kolejny kod' : 'np. FAST albo BON-XXXX-XXXX'}
                       autoCapitalize="characters"
                       spellCheck={false}
                     />
@@ -275,17 +304,30 @@ export default function Koszyk() {
                     {promoBusy ? <><span className="koszyk-spin" /> Sprawdzam</> : 'Zastosuj'}
                   </button>
                 </form>
-                {promoState?.error && <p className="koszyk-err">{promoState.error}</p>}
-                {discount > 0 && (
-                  <motion.p className="koszyk-promo-ok" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                    {isVoucher
-                      ? <>✓ Voucher {appliedCode} ({zl(promoState.amount)}) zaliczony{fullyCovered ? ' — pokrywa całe zamówienie' : `, do zapłaty ${zl(grandTotal)}`}</>
-                      : <>✓ Kod {appliedCode} działa — oszczędzasz {zl(discount)}</>}
-                  </motion.p>
+                {promoErr && <p className="koszyk-err">{promoErr}</p>}
+                {codes.length > 0 && (
+                  <ul className="koszyk-codes">
+                    <AnimatePresence initial={false}>
+                      {codes.map((c) => (
+                        <motion.li key={c.code} layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}>
+                          <span className="koszyk-code-name">✓ {c.code}</span>
+                          <span className="koszyk-code-info">
+                            {c.kind === 'voucher' ? `voucher ${zl(c.amount)}` : `−${c.percent}%`} · −{zl(c.discount)}
+                          </span>
+                          <button type="button" onClick={() => removeCode(c.code)} aria-label={`Usuń kod ${c.code}`} disabled={promoBusy || !!pending}>✕</button>
+                          {c.kind === 'voucher' && c.amount > c.discount && (
+                            <small>Voucher jest jednorazowy — niewykorzystana część ({zl(c.amount - c.discount)}) przepada.</small>
+                          )}
+                        </motion.li>
+                      ))}
+                    </AnimatePresence>
+                  </ul>
                 )}
-                {isVoucher && promoState.amount > discount && (
-                  <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>
-                    Voucher jest jednorazowy — niewykorzystana część ({zl(promoState.amount - discount)}) przepada.
+                {discount > 0 && (
+                  <p className="koszyk-promo-ok">
+                    {fullyCovered
+                      ? '✓ Kody pokrywają całe zamówienie'
+                      : <>✓ {codes.length > 1 ? `Rabaty sumują się — oszczędzasz ${zl(discount)}` : `Oszczędzasz ${zl(discount)}`}, do zapłaty {zl(grandTotal)}</>}
                   </p>
                 )}
                 <AnimatePresence>
@@ -328,15 +370,15 @@ export default function Koszyk() {
                   <div className="koszyk-pay-method is-active">
                     <span className="koszyk-pay-radio" />
                     <div>
-                      <b>{fullyCovered ? 'Opłacone voucherem' : 'Płatność online'}</b>
-                      <p className="muted">{fullyCovered ? `Voucher ${appliedCode} pokrywa całe zamówienie` : 'BLIK, karta, szybki przelew — Tpay'}</p>
+                      <b>{fullyCovered ? (onlyVouchers ? 'Opłacone voucherem' : 'Opłacone kodami') : 'Płatność online'}</b>
+                      <p className="muted">{fullyCovered ? `${codes.map((c) => c.code).join(' + ')} — pokrywa całe zamówienie` : 'BLIK, karta, szybki przelew — Tpay'}</p>
                     </div>
                     <span className="koszyk-pay-total">{zl(grandTotal)}</span>
                   </div>
                 </div>
                 {discount > 0 && (
                   <p className="koszyk-promo-ok" style={{ marginBottom: 12 }}>
-                    ✓ {discountLabel} uwzględniony — taniej o {zl(discount)}
+                    ✓ {codes.map(codeLabel).join(' + ')} — taniej o {zl(discount)}
                   </p>
                 )}
                 <p className="muted" style={{ fontSize: 13 }}>

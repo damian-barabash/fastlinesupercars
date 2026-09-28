@@ -402,11 +402,20 @@ Deno.serve(async (req) => {
         // Nowe zamówienia mają `discount_code`; starsze (sprzed migracji 004) tylko `notes`.
         const [codes, orders] = await Promise.all([
           db('promo_codes?select=*&order=created_at.desc'),
-          db('orders?status=eq.paid&notes=like.promo:*&select=notes,discount_code,discount_kind,discount_grosze'),
+          db('orders?status=eq.paid&notes=like.promo:*&select=notes,discount_code,discount_kind,discount_grosze,discounts'),
         ])
         const uses: Record<string, number> = {}
         const saved: Record<string, number> = {}
         for (const o of orders || []) {
+          // zamówienia z kilkoma kodami: pełna lista w `discounts`
+          if (Array.isArray(o.discounts)) {
+            for (const d of o.discounts) {
+              if (d.kind !== 'promo') continue
+              uses[d.code] = (uses[d.code] || 0) + 1
+              saved[d.code] = (saved[d.code] || 0) + (+d.discount || 0)
+            }
+            continue
+          }
           const code = String(o.discount_code || /^promo:([A-Z0-9_-]+)/i.exec(o.notes || '')?.[1] || '').toUpperCase()
           if (!code || o.discount_kind === 'voucher') continue
           uses[code] = (uses[code] || 0) + 1
@@ -466,7 +475,7 @@ Deno.serve(async (req) => {
 
       case 'stats': {
         const [orders, vouchers] = await Promise.all([
-          db('orders?select=status,total,created_at,discount_grosze,discount_kind'),
+          db('orders?select=status,total,created_at,discount_grosze,discount_kind,discounts'),
           db('vouchers?select=status,kind,amount_grosze'),
         ])
         const bony = (vouchers || []).filter((v: { kind: string }) => v.kind === 'amount')
@@ -494,8 +503,11 @@ Deno.serve(async (req) => {
           bony_active: bony.filter((v: { status: string }) => v.status === 'active').length,
           bony_value_active: sumBony((v) => v.status === 'active'),
           bony_value_used: sumBony((v) => v.status === 'used'),
-          bony_discount_given: paid.reduce((s2: number, o: { discount_kind?: string; discount_grosze?: number }) =>
-            s2 + (o.discount_kind === 'voucher' ? (+o.discount_grosze || 0) : 0), 0),
+          // przy kilku kodach liczymy tylko część z bonów (kody procentowe to nie bony)
+          bony_discount_given: paid.reduce((s2: number, o: { discount_kind?: string; discount_grosze?: number; discounts?: { kind: string; discount: number }[] }) =>
+            s2 + (Array.isArray(o.discounts)
+              ? o.discounts.filter((d) => d.kind === 'voucher').reduce((s3, d) => s3 + (+d.discount || 0), 0)
+              : o.discount_kind === 'voucher' ? (+o.discount_grosze || 0) : 0), 0),
         })
       }
 

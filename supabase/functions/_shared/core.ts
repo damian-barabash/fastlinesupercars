@@ -200,6 +200,7 @@ type OrderRow = {
   gift_for?: string; notes?: string; voucher_id?: string | null
   subtotal_grosze?: number | null; discount_grosze?: number | null
   discount_code?: string | null; discount_kind?: string | null
+  discounts?: { kind: string; code: string; percent?: number; discount: number }[] | null
   items: { product_id: string; name: string; variant: string; price: number; qty: number }[]
 }
 
@@ -251,27 +252,33 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
     }),
   })
 
-  // Bon kwotowy użyty przy tym zamówieniu wypalamy dopiero teraz, gdy płatność jest pewna.
+  // Bony kwotowe użyte przy tym zamówieniu wypalamy dopiero teraz, gdy płatność jest pewna.
   // Funkcja SQL jest idempotentna, więc powtórka powiadomienia z Tpay niczego nie zdejmie drugi raz.
   // Błąd tutaj nie może wywrócić realizacji — zamówienie jest opłacone, voucher już wystawiony.
   if (order.discount_kind === 'voucher') {
     try {
-      const red = await rpc('voucher_redeem', { p_order: order.id })
-      const st = red.data?.[0]
-      if (!red.ok || !st || (st.v_status !== 'redeemed' && st.v_status !== 'already'))
-        console.error(`bon: #${order.number} nie wypalony (${red.error || st?.v_status || 'brak odpowiedzi'})`)
-      else
-        console.log(`bon: #${order.number} ${st.v_code} ${st.v_status}`)
+      const red = await rpc('voucher_redeem', { p_order: order.id })   // jeden wiersz na bon
+      if (!red.ok || !red.data?.length)
+        console.error(`bon: #${order.number} nie wypalony (${red.error || 'brak odpowiedzi'})`)
+      for (const st of red.data || []) {
+        if (st.v_status !== 'redeemed' && st.v_status !== 'already')
+          console.error(`bon: #${order.number} ${st.v_code || ''} nie wypalony (${st.v_status})`)
+        else
+          console.log(`bon: #${order.number} ${st.v_code} ${st.v_status}`)
+      }
     } catch (e) {
       console.error('bon: wyjątek przy wypalaniu', e)
     }
   }
 
-  const discountRow = (order.discount_grosze || 0) > 0 ? `
+  // wiersz na każdy kod; zamówienia sprzed listy `discounts` mają jeden kod w starych kolumnach
+  const discountList = order.discounts?.length ? order.discounts
+    : (order.discount_grosze || 0) > 0 ? [{ kind: order.discount_kind || 'promo', code: order.discount_code || '', discount: order.discount_grosze! }] : []
+  const discountRow = discountList.map((d) => `
     <tr>
-      <td style="padding:10px 0;color:#7ddc9a;font-size:14px;border-bottom:1px solid #2a2a30">${order.discount_kind === 'voucher' ? 'Voucher' : 'Rabat'} ${esc(order.discount_code || '')}</td>
-      <td style="padding:10px 0;color:#7ddc9a;font-size:14px;border-bottom:1px solid #2a2a30" align="right">−${zl(order.discount_grosze!)}</td>
-    </tr>` : ''
+      <td style="padding:10px 0;color:#7ddc9a;font-size:14px;border-bottom:1px solid #2a2a30">${d.kind === 'voucher' ? 'Voucher' : 'Rabat'} ${esc(d.code)}${d.percent ? ` (−${d.percent}%)` : ''}</td>
+      <td style="padding:10px 0;color:#7ddc9a;font-size:14px;border-bottom:1px solid #2a2a30" align="right">−${zl(d.discount)}</td>
+    </tr>`).join('')
 
   const itemsRows = order.items.map((it) => `
     <tr>

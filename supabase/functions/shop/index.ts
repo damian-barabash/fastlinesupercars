@@ -6,11 +6,13 @@
 // wariant i sztuki (a przy produkcie z dowolną kwotą — kwotę, sprawdzaną z granicami z bazy) — dzięki temu nowy produkt dodany w panelu działa od razu,
 // a przesłanej z przeglądarki kwoty nie ma jak podrobić.
 //
-// Jedno pole „kod" w koszyku obsługuje dwa rodzaje kodów (naraz działa tylko jeden):
-//   * `promo_codes` — kod procentowy, wielokrotnego użytku (np. FAST −10%)
-//   * `vouchers` z `kind='amount'` — bon kwotowy, jednorazowy (np. 300 zł na koszyk).
+// Pole „kod" w koszyku obsługuje dwa rodzaje kodów, do MAX_CODES naraz, rabaty się sumują:
+//   * `promo_codes` — kod procentowy, wielokrotnego użytku (np. FAST −10%); procenty kilku
+//     kodów dodają się i liczą od sumy koszyka
+//   * `vouchers` z `kind='amount'` — bon kwotowy, jednorazowy (np. 300 zł na koszyk); bony
+//     odejmują się po kodach procentowych, każdy do wysokości tego, co zostało do zapłaty.
 //     Bon jest rezerwowany przy zakładaniu zamówienia i wypalany dopiero po potwierdzonej
-//     płatności; gdy pokrywa całość, zamówienie realizuje się od razu, bez bramki.
+//     płatności; gdy kody pokrywają całość, zamówienie realizuje się od razu, bez bramki.
 import { CORS, J, db, esc, rpc, SITE, SB_URL, CONTACT_TO, sendMail, mailShell, fulfillOrder, zl } from '../_shared/core.ts'
 import { tpayConfigured, tpayCreateTransaction } from '../_shared/tpay.ts'
 
@@ -20,7 +22,7 @@ const NOTIFY_URL = `${SB_URL}/functions/v1/tpay-notify`
 // `amount` (grosze) — tylko dla produktów z kwotą wybieraną przez klienta (`products.amount_min`)
 type Item = { product_id: string; variant?: string; qty?: number; amount?: number }
 type Customer = { name: string; email: string; phone?: string }
-type CheckoutBody = { customer: Customer; gift_for?: string; items: Item[]; promo?: string; return_origin?: string }
+type CheckoutBody = { customer: Customer; gift_for?: string; items: Item[]; codes?: string[]; promo?: string; return_origin?: string }
 
 /**
  * Adres powrotu z bramki. Bierzemy go z przeglądarki tylko wtedy, gdy jest na białej liście —
@@ -39,6 +41,11 @@ function returnOrigin(raw?: string) {
 
 const normCode = (raw?: string) => (raw || '').trim().toUpperCase().replace(/\s+/g, '')
 const CODE_RE = /^[A-Z0-9_-]{2,32}$/
+const MAX_CODES = 5
+
+/** Kody z żądania: nowa lista `codes` albo pojedyncze `promo` (stara wersja koszyka). */
+const codesOf = (body: { codes?: unknown; promo?: string }) =>
+  (Array.isArray(body.codes) ? body.codes.map(String) : body.promo ? [body.promo] : []).filter((c) => normCode(c))
 
 /** Kod rabatowy z tabeli `promo_codes` (tylko aktywne). Zwraca null, gdy kodu nie ma. */
 async function getPromo(raw?: string) {
@@ -51,13 +58,13 @@ async function getPromo(raw?: string) {
 }
 
 type Applied = { kind: 'promo' | 'voucher'; code: string; percent?: number; amount?: number; discount: number }
+type CodeError = { code: string; error: string; unknown?: boolean }
 
 /**
- * Rozpoznaje wpisany kod: najpierw kod procentowy, potem bon kwotowy.
- * Zwraca `{ applied }` albo `{ error }` z komunikatem po polsku (trafia wprost do koszyka).
- * Nic tu nie rezerwuje — to tylko wycena; blokadę bonu zakłada dopiero `checkout`.
+ * Rozpoznaje jeden wpisany kod: najpierw kod procentowy, potem bon kwotowy.
+ * Zwraca `{ applied }` (jeszcze bez policzonego rabatu) albo `{ error }` z komunikatem po polsku.
  */
-async function resolveCode(raw: string | undefined, subtotal: number): Promise<{ applied?: Applied; error?: string; unknown?: boolean }> {
+async function lookupCode(raw: string | undefined, subtotal: number): Promise<{ applied?: Applied; error?: string; unknown?: boolean }> {
   const code = normCode(raw)
   if (!code || !CODE_RE.test(code)) return { error: 'Nieprawidłowy kod rabatowy', unknown: true }
 
@@ -65,7 +72,7 @@ async function resolveCode(raw: string | undefined, subtotal: number): Promise<{
   if (promo) {
     if (subtotal < promo.min)
       return { error: `Kod ${promo.code} działa przy zakupach od ${(promo.min / 100).toFixed(0)} zł` }
-    return { applied: { kind: 'promo', code: promo.code, percent: promo.percent, discount: Math.round(subtotal * promo.percent / 100) } }
+    return { applied: { kind: 'promo', code: promo.code, percent: promo.percent, discount: 0 } }
   }
 
   const v = (await db(`vouchers?code=eq.${encodeURIComponent(code)}&select=id,code,kind,status,valid_until,amount_grosze,reserved_until`))?.[0]
@@ -85,8 +92,57 @@ async function resolveCode(raw: string | undefined, subtotal: number): Promise<{
 
   const amount = +(v.amount_grosze || 0)
   if (amount <= 0) return { error: `Voucher ${v.code} nie ma ustalonej wartości` }
-  // bon jest jednorazowy: przy tańszym koszyku odejmujemy tyle, ile trzeba, a reszta przepada
-  return { applied: { kind: 'voucher', code: v.code, amount, discount: Math.min(amount, subtotal) } }
+  return { applied: { kind: 'voucher', code: v.code, amount, discount: 0 } }
+}
+
+/**
+ * Wycena listy kodów. Kody procentowe sumują się procentami od sumy koszyka, bony odejmują się
+ * po nich w kolejności wpisania — każdy do wysokości tego, co zostało do zapłaty (bon jest
+ * jednorazowy, reszta nominału przepada). Rabat nigdy nie przekracza sumy koszyka.
+ * Kod, który nic by już nie odjął (koszyk pokryty wcześniejszymi), jest odrzucany —
+ * żeby nie spalić bonu za darmo.
+ * Nic tu nie rezerwuje — to tylko wycena; blokadę bonów zakłada dopiero `checkout`.
+ */
+async function resolveCodes(raws: string[], subtotal: number): Promise<{ applied: Applied[]; discount: number; errors: CodeError[] }> {
+  const errors: CodeError[] = []
+  const found: Applied[] = []
+  const seen = new Set<string>()
+  for (const raw of raws) {
+    const code = normCode(raw)
+    if (seen.has(code)) { errors.push({ code, error: `Kod ${code} jest już dodany` }); continue }
+    seen.add(code)
+    if (found.length >= MAX_CODES) { errors.push({ code, error: `Możesz użyć najwyżej ${MAX_CODES} kodów w jednym zamówieniu` }); continue }
+    const r = await lookupCode(code, subtotal)
+    if (r.error || !r.applied) errors.push({ code, error: r.error || 'Nieprawidłowy kod rabatowy', unknown: r.unknown })
+    else found.push(r.applied)
+  }
+
+  // procenty najpierw (od sumy koszyka), potem bony — kolejność wpisania zachowana w każdej grupie
+  const ordered = [...found.filter((a) => a.kind === 'promo'), ...found.filter((a) => a.kind === 'voucher')]
+  const applied: Applied[] = []
+  let left = subtotal
+  for (const a of ordered) {
+    const want = a.kind === 'promo' ? Math.round(subtotal * a.percent! / 100) : a.amount!
+    const d = Math.min(want, left)
+    if (d <= 0) { errors.push({ code: a.code, error: `Zamówienie jest już w całości pokryte — kod ${a.code} nie jest potrzebny` }); continue }
+    applied.push({ ...a, discount: d })
+    left -= d
+  }
+  return { applied, discount: subtotal - left, errors }
+}
+
+/** Zapis rabatów przy zamówieniu: pełna lista + stare kolumny (suma, kody, rodzaj) dla zgodności. */
+function discountCols(applied: Applied[]) {
+  const discount = applied.reduce((s, a) => s + a.discount, 0)
+  return {
+    discount_grosze: discount,
+    discounts: applied.length ? applied : null,
+    discount_code: applied.map((a) => a.code).join(', ') || null,
+    // 'voucher', gdy jest choć jeden bon — od tego zależy wypalanie i zwalnianie rezerwacji
+    discount_kind: !applied.length ? null : applied.some((a) => a.kind === 'voucher') ? 'voucher' : 'promo',
+    // `notes` zostaje w dawnym formacie — na nim opiera się licznik użyć kodów w panelu
+    notes: applied.map((a) => `promo:${a.code} -${(a.discount / 100).toFixed(2)} zł`).join('; '),
+  }
 }
 
 /** Komunikat dla klienta z kodu błędu funkcji SQL `voucher_reserve`. */
@@ -126,7 +182,7 @@ async function noteCodeTry(ip: string, code: string) {
 }
 
 type Line = { product_id: string; name: string; variant: string; price: number; qty: number }
-type Built = { error?: Response; lines?: Line[]; subtotal?: number; discount?: number; applied?: Applied; total?: number }
+type Built = { error?: Response; lines?: Line[]; subtotal?: number; discount?: number; applied?: Applied[]; total?: number }
 
 /** Buduje pozycje zamówienia i sumę na podstawie aktualnych danych z bazy. */
 async function buildOrder(body: CheckoutBody): Promise<Built> {
@@ -168,15 +224,9 @@ async function buildOrder(body: CheckoutBody): Promise<Built> {
 
   if (subtotal <= 0) return { error: J({ error: 'Nieprawidłowa kwota zamówienia' }, 400) }
 
-  let discount = 0
-  let applied: Applied | undefined
-  if (body.promo) {
-    const r = await resolveCode(body.promo, subtotal)
-    if (r.error || !r.applied) return { error: J({ error: r.error || 'Nieprawidłowy kod rabatowy' }, 400) }
-    applied = r.applied
-    discount = Math.min(r.applied.discount, subtotal)   // do zera, nigdy poniżej
-  }
-  return { lines, subtotal, discount, applied, total: subtotal - discount }
+  const r = await resolveCodes(codesOf(body), subtotal)
+  if (r.errors.length) return { error: J({ error: r.errors[0].error, code: r.errors[0].code }, 400) }
+  return { lines, subtotal, discount: r.discount, applied: r.applied, total: subtotal - r.discount }
 }
 
 /** Zamówienie + transakcja Tpay. Zwraca link do płatności — front tylko przekierowuje. */
@@ -189,8 +239,9 @@ async function checkout(body: CheckoutBody) {
   const recent = await db(`orders?customer_email=eq.${encodeURIComponent(body.customer.email.trim())}&created_at=gte.${since}&select=id`)
   if ((recent?.length || 0) >= 10) return J({ error: 'Zbyt wiele prób płatności. Spróbuj za kilka minut.' }, 429)
 
-  const applied = built.applied
+  let applied = built.applied!
   let discount = built.discount!, total = built.total!
+  const hasVoucher = applied.some((a) => a.kind === 'voucher')
 
   const [order] = await db('orders', {
     method: 'POST',
@@ -198,33 +249,37 @@ async function checkout(body: CheckoutBody) {
       customer_name: body.customer.name.trim(), customer_email: body.customer.email.trim(),
       customer_phone: (body.customer.phone || '').trim(), gift_for: (body.gift_for || '').trim(),
       items: built.lines, total, status: 'pending',
-      subtotal_grosze: built.subtotal, discount_grosze: discount,
-      discount_code: applied?.code || null, discount_kind: applied?.kind || null,
-      // `notes` zostaje w dawnym formacie — na nim opiera się licznik użyć kodów w panelu
-      notes: applied ? `promo:${applied.code} -${(discount / 100).toFixed(2)} zł` : '',
+      subtotal_grosze: built.subtotal, ...discountCols(applied),
     }),
   })
 
-  // Bon kwotowy blokujemy dopiero teraz, na konkretne zamówienie i atomowo (funkcja SQL),
+  // Bony kwotowe blokujemy dopiero teraz, na konkretne zamówienie i atomowo (funkcja SQL),
   // żeby ten sam kod nie opłacił dwóch zamówień równolegle.
-  if (applied?.kind === 'voucher') {
-    const res = await rpc('voucher_reserve', { p_code: applied.code, p_order: order.id, p_subtotal: built.subtotal })
-    if (!res.ok) {
-      await db(`orders?id=eq.${order.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'cancelled', payment_error: `voucher: ${(res.error || '').slice(0, 200)}` }),
-      })
-      return J({ error: reserveError(res.error) }, 409)
+  if (hasVoucher) {
+    const promoSum = applied.filter((a) => a.kind === 'promo').reduce((s, a) => s + a.discount, 0)
+    let left = built.subtotal! - promoSum
+    const real: Applied[] = applied.filter((a) => a.kind === 'promo')
+    for (const a of applied.filter((a) => a.kind === 'voucher')) {
+      const res = await rpc('voucher_reserve', { p_code: a.code, p_order: order.id, p_subtotal: left })
+      if (!res.ok) {
+        await rpc('voucher_release', { p_order: order.id })   // bony zarezerwowane przed nim wracają do obiegu
+        await db(`orders?id=eq.${order.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'cancelled', payment_error: `voucher ${a.code}: ${(res.error || '').slice(0, 200)}` }),
+        })
+        return J({ error: `${a.code}: ${reserveError(res.error)}`, code: a.code }, 409)
+      }
+      // nominał mógł się zmienić między wyceną a rezerwacją — obowiązuje to, co zwróciła baza
+      const d = Math.min(+(res.data?.[0]?.v_applied || 0), left)
+      real.push({ ...a, amount: +(res.data?.[0]?.v_amount || a.amount), discount: d })
+      left -= d
     }
-    // nominał mógł się zmienić między wyceną a rezerwacją — obowiązuje to, co zwróciła baza
-    const realApplied = Math.min(+(res.data?.[0]?.v_applied || 0), built.subtotal!)
-    if (realApplied !== discount) {
-      discount = realApplied
+    const realDiscount = real.reduce((s, a) => s + a.discount, 0)
+    if (realDiscount !== discount) {
+      applied = real
+      discount = realDiscount
       total = built.subtotal! - discount
-      await db(`orders?id=eq.${order.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ total, discount_grosze: discount, notes: `promo:${applied.code} -${(discount / 100).toFixed(2)} zł` }),
-      })
+      await db(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ total, ...discountCols(applied) }) })
     }
   }
 
@@ -232,8 +287,8 @@ async function checkout(body: CheckoutBody) {
   if (total === 0) {
     try {
       await db(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ payment_method: 'voucher' }) })
-      const res = await fulfillOrder({ ...order, total, discount_grosze: discount, discount_code: applied!.code, discount_kind: applied!.kind }, 0)
-      console.log(`checkout: #${order.number} opłacone voucherem ${applied!.code} → ${res.code}`)
+      const res = await fulfillOrder({ ...order, total, ...discountCols(applied) }, 0)
+      console.log(`checkout: #${order.number} opłacone kodami ${applied.map((a) => a.code).join(', ')} → ${res.code}`)
       return J({ order_id: order.id, number: order.number, total: 0, paid: true, voucher_code: res.code })
     } catch (e) {
       console.error('checkout: realizacja zamówienia na 0 zł', e)
@@ -253,7 +308,7 @@ async function checkout(body: CheckoutBody) {
   }
   if (!tpayConfigured()) {
     console.error('checkout: brak konfiguracji Tpay')
-    if (applied?.kind === 'voucher') await rpc('voucher_release', { p_order: order.id })
+    if (hasVoucher) await rpc('voucher_release', { p_order: order.id })
     return J({ error: 'Płatności online są chwilowo niedostępne. Napisz do nas: ' + CONTACT_TO }, 503)
   }
 
@@ -279,24 +334,36 @@ async function checkout(body: CheckoutBody) {
   } catch (e) {
     console.error('checkout: tpay', e)
     // transakcja nie powstała — bon musi wrócić do obiegu, inaczej wisiałby zablokowany 2 h
-    if (applied?.kind === 'voucher') await rpc('voucher_release', { p_order: order.id })
+    if (hasVoucher) await rpc('voucher_release', { p_order: order.id })
     await db(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ payment_error: String(e).slice(0, 300) }) })
     return J({ error: 'Nie udało się rozpocząć płatności. Spróbuj ponownie lub napisz: ' + CONTACT_TO }, 502)
   }
 }
 
-/** Wycena kodu w koszyku — kod procentowy albo bon kwotowy. Nic nie rezerwuje. */
-async function checkPromo(body: { promo: string; subtotal: number }, ip: string) {
+/**
+ * Wycena kodów w koszyku. Nic nie rezerwuje.
+ * Nowy koszyk przysyła `codes` (wszystkie kody naraz) i dostaje listę zastosowanych kodów,
+ * sumę rabatu i błędy per kod. Stary koszyk przysyła jeden `promo` — dla niego zostaje
+ * dawna odpowiedź.
+ */
+async function checkPromo(body: { promo?: string; codes?: string[]; subtotal: number }, ip: string) {
   const subtotal = Math.max(0, Math.round(Number(body.subtotal) || 0))
   if (await tooManyCodeTries(ip))
-    return J({ valid: false, error: 'Zbyt wiele prób. Spróbuj za kilka minut.' }, 429)
+    return J({ valid: false, error: 'Zbyt wiele prób. Spróbuj za kilka minut.', applied: [], discount: 0, errors: [] }, 429)
 
-  const r = await resolveCode(body.promo, subtotal)
-  if (r.error || !r.applied) {
-    if (r.unknown) await noteCodeTry(ip, normCode(body.promo))
-    return J({ valid: false, error: r.error || 'Nieprawidłowy kod rabatowy' })
+  const r = await resolveCodes(codesOf(body), subtotal)
+  for (const e of r.errors) if (e.unknown) await noteCodeTry(ip, e.code)
+
+  if (Array.isArray(body.codes)) {
+    return J({
+      valid: !r.errors.length, discount: r.discount, covers_all: subtotal > 0 && r.discount >= subtotal,
+      applied: r.applied, errors: r.errors.map(({ code, error }) => ({ code, error })),
+    })
   }
-  const a = r.applied
+
+  if (r.errors.length || !r.applied.length)
+    return J({ valid: false, error: r.errors[0]?.error || 'Nieprawidłowy kod rabatowy' })
+  const a = r.applied[0]
   return J({
     valid: true, kind: a.kind, code: a.code, discount: a.discount,
     ...(a.kind === 'promo' ? { percent: a.percent } : { amount: a.amount, covers_all: a.discount >= subtotal }),
@@ -315,7 +382,7 @@ async function payTest(body: { order_id: string }) {
 /** Status zamówienia — używane przez stronę „Dziękujemy" (id zamówienia = UUID, nie do zgadnięcia). */
 async function getOrder(body: { order_id: string }) {
   if (!/^[0-9a-f-]{36}$/i.test(body.order_id || '')) return J({ error: 'not found' }, 404)
-  const o = (await db(`orders?id=eq.${body.order_id}&select=id,number,status,total,items,customer_name,customer_email,voucher_id,payment_url,discount_grosze,discount_code,discount_kind`))?.[0]
+  const o = (await db(`orders?id=eq.${body.order_id}&select=id,number,status,total,items,customer_name,customer_email,voucher_id,payment_url,discount_grosze,discount_code,discount_kind,discounts`))?.[0]
   if (!o) return J({ error: 'not found' }, 404)
   let voucher = null
   if (o.voucher_id) voucher = (await db(`vouchers?id=eq.${o.voucher_id}&select=code,valid_until,status`))?.[0]
@@ -323,6 +390,7 @@ async function getOrder(body: { order_id: string }) {
     id: o.id, number: o.number, status: o.status, total: o.total, items: o.items,
     customer_name: o.customer_name, customer_email: o.customer_email,
     discount: o.discount_grosze || 0, discount_code: o.discount_code || '', discount_kind: o.discount_kind || '',
+    discounts: o.discounts || [],
     payment_url: o.status === 'pending' ? o.payment_url : null,
     voucher,
   })
