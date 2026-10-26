@@ -57,6 +57,27 @@
 .koszyk-check { display: flex; gap: 12px; align-items: flex-start; margin: 20px 0; cursor: pointer; font-size: 14px; color: var(--ink); }
 .koszyk-check input { accent-color: var(--red); width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; }
 
+/* faktura na firmę */
+.koszyk-invoice { border-left: 3px solid var(--red); background: var(--bg); padding: 20px 22px; margin: -4px 0 20px; }
+.koszyk-invoice-nip { display: flex; gap: 12px; align-items: flex-end; }
+.koszyk-invoice-nip .field { flex: 1; max-width: 300px; }
+.koszyk-invoice-nip input { letter-spacing: .04em; }
+.koszyk-invoice-nip input[aria-invalid="true"] { border-color: var(--red); }
+.koszyk-invoice-btn { padding: 12px 20px; font-size: 12.5px; min-width: 146px; white-space: nowrap; }
+.koszyk-invoice-msg { font-size: 13px; margin: 8px 0 0; }
+.koszyk-invoice-msg.is-ok { color: #1f8a46; }
+.koszyk-invoice-msg.is-bad { color: var(--red); }
+.koszyk-invoice-grid { display: grid; grid-template-columns: 160px 1fr; gap: 18px; margin-top: 18px; }
+.koszyk-invoice-grid .is-wide { grid-column: 1 / -1; }
+.koszyk-invoice-note { font-size: 13px; color: var(--gray); margin: 14px 0 0; }
+@media (max-width: 620px) {
+  .koszyk-invoice { padding: 16px; }
+  .koszyk-invoice-nip { flex-wrap: wrap; }
+  .koszyk-invoice-nip .field { flex: 1 1 100%; max-width: none; }
+  .koszyk-invoice-btn { flex: 1 1 100%; }
+  .koszyk-invoice-grid { grid-template-columns: 1fr; }
+}
+
 /* ciemny box podsumowania — wszystkie teksty muszą być jasne */
 .koszyk-sum-box { border: 1.5px solid rgba(255,255,255,.12); padding: 22px 26px; color: #fff; }
 .koszyk-sum-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.1); font-size: 14.5px; overflow: hidden; }

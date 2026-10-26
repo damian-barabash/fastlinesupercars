@@ -33,12 +33,25 @@ function useCountTo(value, ms = 620) {
   return shown
 }
 
+// NIP: 10 cyfr, ostatnia to suma kontrolna (wagi 6,5,7,2,3,4,5,6,7, modulo 11) — serwer sprawdza to samo
+const normNip = (v) => (v || '').replace(/^\s*PL/i, '').replace(/[\s-]/g, '')
+function nipValid(nip) {
+  if (!/^\d{10}$/.test(nip)) return false
+  const sum = [6, 5, 7, 2, 3, 4, 5, 6, 7].reduce((s, k, i) => s + k * Number(nip[i]), 0) % 11
+  return sum !== 10 && sum === Number(nip[9])
+}
+const fmtNip = (nip) => `${nip.slice(0, 3)}-${nip.slice(3, 6)}-${nip.slice(6, 8)}-${nip.slice(8)}`
+
 export default function Koszyk() {
   const products = useProducts()
   const nav = useNavigate()
   const [items, setItems] = useState(getCart())
   const [step, setStep] = useState(0)
   const [form, setForm] = useState({ name: '', email: '', phone: '', gift_for: '', gift: false, terms: false })
+  // faktura na firmę — dane podpowiada rejestr VAT (Biała lista MF) po wpisaniu NIP-u
+  const [wantInvoice, setWantInvoice] = useState(false)
+  const [inv, setInv] = useState({ nip: '', company: '', street: '', postal: '', city: '' })
+  const [nipState, setNipState] = useState({ busy: false, msg: '', ok: false, for: '' })
   const [err, setErr] = useState('')
   const [promo, setPromo] = useState('')
   // zastosowane kody, rabaty się sumują: [{kind:'promo'|'voucher', code, discount, percent?, amount?}]
@@ -67,11 +80,49 @@ export default function Koszyk() {
     return { ...it, p, price, variant: isOpenAmount(p) ? amountLabel(price) : it.variant }
   })
 
+  const setI = (k) => (e) => {
+    let v = e.target.value
+    // kod pocztowy: same cyfry → 00-000
+    if (k === 'postal') { const d = v.replace(/\D/g, '').slice(0, 5); v = d.length > 2 ? `${d.slice(0, 2)}-${d.slice(2)}` : d }
+    setInv({ ...inv, [k]: v })
+    setErr('')
+  }
+  const nipDigits = normNip(inv.nip)
+
+  async function lookupNip(force = false) {
+    if (!nipValid(nipDigits) || nipState.busy) return
+    if (!force && nipState.for === nipDigits) return
+    setNipState({ busy: true, msg: '', ok: false, for: nipDigits })
+    try {
+      const d = await shop('nip', { nip: nipDigits })
+      setInv((cur) => ({ ...cur, company: d.company || cur.company, street: d.street || cur.street, postal: d.postal || cur.postal, city: d.city || cur.city }))
+      setNipState({ busy: false, ok: true, for: nipDigits, msg: `Dane z rejestru VAT${d.vat_status ? ` · status: ${d.vat_status}` : ''} — sprawdź i popraw, jeśli trzeba` })
+    } catch (e) {
+      setNipState({ busy: false, ok: false, for: nipDigits, msg: e.message || 'Nie udało się pobrać danych — wpisz je ręcznie' })
+    }
+  }
+  // poprawny NIP → od razu pobieramy dane firmy, bez szukania przycisku
+  useEffect(() => {
+    if (wantInvoice && nipValid(nipDigits)) lookupNip()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nipDigits, wantInvoice])
+
+  function invoiceError() {
+    if (!wantInvoice) return ''
+    if (!nipValid(nipDigits)) return 'Podaj poprawny NIP firmy (10 cyfr)'
+    if (!inv.company.trim()) return 'Podaj nazwę firmy do faktury'
+    if (!inv.street.trim() || !inv.city.trim()) return 'Podaj adres firmy do faktury'
+    if (!/^\d{2}-\d{3}$/.test(inv.postal)) return 'Kod pocztowy w formacie 00-000'
+    return ''
+  }
+
   function goStep(n) {
     setErr('')
     if (n >= 1 && items.length === 0) return
     if (n >= 2) {
       if (!form.name.trim() || !/.+@.+\..+/.test(form.email)) { setErr('Uzupełnij imię i poprawny e-mail'); setStep(1); return }
+      const ie = invoiceError()
+      if (ie) { setErr(ie); setStep(1); return }
     }
     if (n >= 3 && !form.terms) { setErr('Zaakceptuj regulamin płatności'); setStep(2); return }
     setStep(n)
@@ -165,6 +216,7 @@ export default function Koszyk() {
       const d = await shop('checkout', {
         customer: { name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim() },
         gift_for: form.gift ? form.gift_for.trim() : '',
+        invoice: wantInvoice ? { ...inv, nip: nipDigits } : null,
         items: items.map((i) => ({ product_id: i.product_id, variant: i.variant, qty: i.qty, ...(i.amount != null ? { amount: i.amount } : {}) })),
         ...(codes.length ? { codes: codes.map((c) => c.code) } : {}),
         return_origin: window.location.origin,   // serwer i tak przyjmie tylko adres z białej listy
@@ -253,6 +305,34 @@ export default function Koszyk() {
                 </label>
                 {form.gift && (
                   <div className="field"><label>Voucher dla</label><input value={form.gift_for} onChange={set('gift_for')} placeholder="np. Szymona Łęczkiewicza" /></div>
+                )}
+                <label className="koszyk-check">
+                  <input type="checkbox" checked={wantInvoice} onChange={(e) => { setWantInvoice(e.target.checked); setErr('') }} />
+                  <span>Chcę fakturę VAT na firmę</span>
+                </label>
+                {wantInvoice && (
+                  <div className="koszyk-invoice">
+                    <div className="koszyk-invoice-nip">
+                      <div className="field">
+                        <label>NIP *</label>
+                        <input value={inv.nip} onChange={setI('nip')} inputMode="numeric" placeholder="np. 526-025-02-74" maxLength={16}
+                          aria-invalid={nipDigits.length >= 10 && !nipValid(nipDigits)} />
+                      </div>
+                      <button type="button" className="btn btn-ghost koszyk-invoice-btn" onClick={() => lookupNip(true)} disabled={!nipValid(nipDigits) || nipState.busy}>
+                        {nipState.busy ? 'Pobieram…' : 'Pobierz dane'}
+                      </button>
+                    </div>
+                    {nipDigits.length >= 10 && !nipValid(nipDigits)
+                      ? <p className="koszyk-invoice-msg is-bad">Ten NIP ma błędną sumę kontrolną — sprawdź cyfry</p>
+                      : nipState.msg && nipState.for === nipDigits && <p className={`koszyk-invoice-msg ${nipState.ok ? 'is-ok' : 'is-bad'}`}>{nipState.msg}</p>}
+                    <div className="koszyk-invoice-grid">
+                      <div className="field is-wide"><label>Nazwa firmy *</label><input value={inv.company} onChange={setI('company')} autoComplete="organization" /></div>
+                      <div className="field is-wide"><label>Ulica i numer *</label><input value={inv.street} onChange={setI('street')} autoComplete="street-address" /></div>
+                      <div className="field"><label>Kod pocztowy *</label><input value={inv.postal} onChange={setI('postal')} inputMode="numeric" placeholder="00-000" autoComplete="postal-code" /></div>
+                      <div className="field"><label>Miasto *</label><input value={inv.city} onChange={setI('city')} autoComplete="address-level2" /></div>
+                    </div>
+                    <p className="koszyk-invoice-note">Fakturę wystawimy na te dane i wyślemy na podany e-mail.</p>
+                  </div>
                 )}
                 {err && <p className="koszyk-err">{err}</p>}
                 <div className="koszyk-actions">
@@ -348,6 +428,7 @@ export default function Koszyk() {
                 <div className="koszyk-sum-meta">
                   <p><b>{form.name}</b> · {form.email}{form.phone ? ` · ${form.phone}` : ''}</p>
                   {form.gift && form.gift_for && <p>Voucher dla: <b>{form.gift_for}</b></p>}
+                  {wantInvoice && <p>Faktura VAT: <b>{inv.company}</b> · NIP {fmtNip(nipDigits)} · {inv.street}, {inv.postal} {inv.city}</p>}
                   <p className="muted">Voucher PDF (ważny 1 rok) wyślemy na e-mail od razu po opłaceniu.</p>
                 </div>
                 <label className="koszyk-check">

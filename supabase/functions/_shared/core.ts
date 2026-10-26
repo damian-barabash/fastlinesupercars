@@ -201,6 +201,7 @@ type OrderRow = {
   subtotal_grosze?: number | null; discount_grosze?: number | null
   discount_code?: string | null; discount_kind?: string | null
   discounts?: { kind: string; code: string; percent?: number; discount: number }[] | null
+  invoice?: { nip: string; company: string; street: string; postal: string; city: string } | null
   items: { product_id: string; name: string; variant: string; price: number; qty: number }[]
 }
 
@@ -286,6 +287,11 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
       <td style="padding:10px 0;color:#fff;font-size:14px;border-bottom:1px solid #2a2a30" align="right">${zl(it.price * it.qty)}</td>
     </tr>`).join('')
 
+  // faktura na firmę: biuro wystawia ją ręcznie, klient widzi, na jakie dane
+  const inv = order.invoice
+  const nipFmt = inv ? `${inv.nip.slice(0, 3)}-${inv.nip.slice(3, 6)}-${inv.nip.slice(6, 8)}-${inv.nip.slice(8)}` : ''
+  const invoiceLines = inv ? `${esc(inv.company)}<br>NIP: ${nipFmt}<br>${esc(inv.street)}, ${esc(inv.postal)} ${esc(inv.city)}` : ''
+
   const html = mailShell(`
     <div style="color:#c8102e;font-size:12px;letter-spacing:3px;font-weight:bold">POTWIERDZENIE ZAKUPU</div>
     <h1 style="color:#fff;font-size:24px;margin:10px 0 4px">Dziękujemy, ${esc(order.customer_name.split(' ')[0])}!</h1>
@@ -302,6 +308,11 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
       <div style="color:#fff;font-size:26px;font-weight:bold;letter-spacing:4px;margin-top:4px">${code}</div>
       <div style="color:#8a8a92;font-size:12px;margin-top:6px">Ważny do: <span style="color:#fff">${validPL}</span></div>
     </div>
+    ${inv ? `<div style="border-left:3px solid #c8102e;padding:4px 0 4px 16px;margin:0 0 24px">
+      <div style="color:#8a8a92;font-size:11px;letter-spacing:2px">FAKTURA VAT NA DANE</div>
+      <div style="color:#fff;font-size:14px;line-height:1.7;margin-top:6px">${invoiceLines}</div>
+      <div style="color:#8a8a92;font-size:12px;margin-top:6px">Fakturę wyślemy osobno na ten adres e-mail.</div>
+    </div>` : ''}
     <p style="color:#b9b9c0;font-size:14px;line-height:1.7">Następny krok — zarezerwuj termin przejazdu:</p>
     <a href="${SITE}/kalendarz" style="display:inline-block;background:#c8102e;color:#fff;text-decoration:none;font-weight:bold;letter-spacing:2px;font-size:14px;padding:14px 34px">ZAREZERWUJ TERMIN</a>
   `)
@@ -310,7 +321,7 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
   const sent = await sendMail(order.customer_email, `Voucher ${code} — potwierdzenie zakupu #${order.number}`, html, attachments)
 
   // kopia dla biura — każde opłacone zamówienie ląduje w skrzynce rezerwacji
-  await sendMail(CONTACT_TO, `Nowe zamówienie #${order.number} — ${order.customer_name} (${zl(order.total)})`, mailShell(`
+  await sendMail(CONTACT_TO, `Nowe zamówienie #${order.number} — ${order.customer_name} (${zl(order.total)})${inv ? ' — FAKTURA' : ''}`, mailShell(`
     <div style="color:#c8102e;font-size:12px;letter-spacing:3px;font-weight:bold">NOWE ZAMÓWIENIE</div>
     <h1 style="color:#fff;font-size:20px;margin:10px 0">#${order.number} · ${zl(order.total)}</h1>
     <p style="color:#b9b9c0;font-size:14px;line-height:1.8">
@@ -319,6 +330,10 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
       ${order.gift_for ? `<br>Voucher dla: <b style="color:#fff">${esc(order.gift_for)}</b>` : ''}
       ${order.notes ? `<br>${esc(order.notes)}` : ''}
     </p>
+    ${inv ? `<div style="background:#131316;border:1px solid #c8102e;padding:16px 20px;margin:4px 0 18px">
+      <div style="color:#c8102e;font-size:11px;letter-spacing:2px;font-weight:bold">KLIENT PROSI O FAKTURĘ VAT</div>
+      <div style="color:#fff;font-size:14px;line-height:1.7;margin-top:6px">${invoiceLines}</div>
+    </div>` : ''}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsRows}${discountRow}</table>
     <div style="color:#8a8a92;font-size:13px;margin-top:18px">Kod vouchera: <b style="color:#fff">${code}</b> · ważny do ${validPL}</div>
     ${pdfPath ? '' : '<div style="color:#ff6b6b;font-size:13px;margin-top:10px">UWAGA: nie udało się wygenerować PDF (brak szablonu?) — wyślij voucher ręcznie.</div>'}

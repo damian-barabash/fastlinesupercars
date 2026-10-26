@@ -513,11 +513,17 @@ function Orders() {
               {rows.map((o) => (
                 <tr key={o.id} onClick={() => setOpen(open === o.id ? null : o.id)} className="adm-row-click">
                   <td>#{o.number}</td>
-                  <td><b>{o.customer_name}</b><div className="adm-muted">{o.customer_email}</div>
+                  <td><b>{o.customer_name}</b>{o.invoice && <span className="adm-pill adm-pill-fv" title={`Faktura: ${o.invoice.company}`}>FV</span>}<div className="adm-muted">{o.customer_email}</div>
                     {open === o.id && (
                       <div className="adm-order-detail">
                         {o.customer_phone && <div>Tel: {o.customer_phone}</div>}
                         {o.gift_for && <div>Prezent dla: <b>{o.gift_for}</b></div>}
+                        {o.invoice && (
+                          <div className="adm-order-invoice">
+                            <b>Faktura VAT:</b> {o.invoice.company}<br />
+                            NIP {o.invoice.nip} · {o.invoice.street}, {o.invoice.postal} {o.invoice.city}
+                          </div>
+                        )}
                         {(o.items || []).map((it, i) => <div key={i}>· {it.qty}× {it.name} {it.variant}</div>)}
                         {o.notes && <div>{o.notes}</div>}
                         {o.tpay_title && <div>Tpay: <b>{o.tpay_title}</b>{o.paid_amount ? ` · wpłacono ${zl(o.paid_amount)}` : ''}</div>}

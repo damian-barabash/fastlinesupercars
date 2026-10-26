@@ -1,5 +1,6 @@
 // FASTLINESUPERCARS — publiczna funkcja sklepu.
 // Akcje: checkout (zamówienie + transakcja Tpay) | checkPromo | order (status) | contact
+//        nip (dane firmy z „Białej listy" Ministerstwa Finansów — podpowiedź do faktury)
 //        pay — WYŁĄCZNIE tryb testowy, za flagą SHOP_TEST_PAYMENTS=1
 //
 // Zasada: ceny liczy serwer z tabeli `products`. Klient przysyła tylko id produktu,
@@ -22,7 +23,71 @@ const NOTIFY_URL = `${SB_URL}/functions/v1/tpay-notify`
 // `amount` (grosze) — tylko dla produktów z kwotą wybieraną przez klienta (`products.amount_min`)
 type Item = { product_id: string; variant?: string; qty?: number; amount?: number }
 type Customer = { name: string; email: string; phone?: string }
-type CheckoutBody = { customer: Customer; gift_for?: string; items: Item[]; codes?: string[]; promo?: string; return_origin?: string }
+type Invoice = { nip?: string; company?: string; street?: string; postal?: string; city?: string }
+type CheckoutBody = { customer: Customer; gift_for?: string; invoice?: Invoice | null; items: Item[]; codes?: string[]; promo?: string; return_origin?: string }
+
+// ---------- faktura na firmę ----------
+
+/** Same cyfry NIP-u („PL 526-025-02-74" → „5260250274"). */
+const normNip = (raw?: string) => (raw || '').replace(/^\s*PL/i, '').replace(/[\s-]/g, '')
+
+/** NIP: 10 cyfr, ostatnia to suma kontrolna (wagi 6,5,7,2,3,4,5,6,7, modulo 11). */
+function nipValid(nip: string) {
+  if (!/^\d{10}$/.test(nip)) return false
+  const w = [6, 5, 7, 2, 3, 4, 5, 6, 7]
+  const sum = w.reduce((s, k, i) => s + k * Number(nip[i]), 0) % 11
+  return sum !== 10 && sum === Number(nip[9])
+}
+
+/** Dane do faktury z koszyka: null = bez faktury, { error } = coś do poprawy. */
+function parseInvoice(raw?: Invoice | null): { invoice: Required<Invoice> | null; error?: string } {
+  if (!raw) return { invoice: null }
+  const t = (v: unknown, max: number) => String(v ?? '').trim().replace(/\s+/g, ' ').slice(0, max)
+  const inv = {
+    nip: normNip(String(raw.nip ?? '')), company: t(raw.company, 200),
+    street: t(raw.street, 200), postal: t(raw.postal, 6), city: t(raw.city, 100),
+  }
+  if (!nipValid(inv.nip)) return { invoice: null, error: 'Nieprawidłowy NIP — sprawdź cyfry' }
+  if (!inv.company) return { invoice: null, error: 'Podaj nazwę firmy do faktury' }
+  if (!inv.street || !inv.city) return { invoice: null, error: 'Podaj adres firmy do faktury' }
+  if (!/^\d{2}-\d{3}$/.test(inv.postal)) return { invoice: null, error: 'Kod pocztowy w formacie 00-000' }
+  return { invoice: inv }
+}
+
+// Wyniki z Białej listy trzymamy w pamięci instancji — API MF ma dzienny limit zapytań.
+const nipCache = new Map<string, { at: number; data: Record<string, unknown> }>()
+
+/**
+ * Podpowiedź danych firmy po NIP z publicznego API „Biała lista podatników VAT" (MF, bez klucza).
+ * Tylko wypełnia formularz — klient może wszystko poprawić, a serwer i tak sprawdza dane przy checkout.
+ */
+async function nipLookup(body: { nip?: string }) {
+  const nip = normNip(body.nip)
+  if (!nipValid(nip)) return J({ error: 'Nieprawidłowy NIP — sprawdź cyfry' }, 400)
+  const hit = nipCache.get(nip)
+  if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return J(hit.data)
+
+  const date = new Date().toISOString().slice(0, 10)
+  let res: Response
+  try {
+    res = await fetch(`https://wl-api.mf.gov.pl/api/search/nip/${nip}?date=${date}`, { signal: AbortSignal.timeout(6000) })
+  } catch {
+    return J({ error: 'Rejestr MF nie odpowiada — wpisz dane ręcznie' }, 502)
+  }
+  if (!res.ok) return J({ error: 'Nie udało się pobrać danych — wpisz je ręcznie' }, 502)
+  const subj = (await res.json())?.result?.subject
+  if (!subj) return J({ error: 'Nie znaleźliśmy firmy w rejestrze VAT — wpisz dane ręcznie' }, 404)
+
+  // adres w formacie „ULICA 12, 00-916 MIASTO"
+  const addr = String(subj.workingAddress || subj.residenceAddress || '')
+  const m = addr.match(/^(.*),\s*(\d{2}-\d{3})\s+(.+)$/)
+  const data = {
+    nip, company: subj.name || '', vat_status: subj.statusVat || '',
+    street: m ? m[1] : addr, postal: m ? m[2] : '', city: m ? m[3] : '',
+  }
+  nipCache.set(nip, { at: Date.now(), data })
+  return J(data)
+}
 
 /**
  * Adres powrotu z bramki. Bierzemy go z przeglądarki tylko wtedy, gdy jest na białej liście —
@@ -190,6 +255,8 @@ async function buildOrder(body: CheckoutBody): Promise<Built> {
   if (!customer?.name?.trim() || !customer?.email || !/.+@.+\..+/.test(customer.email))
     return { error: J({ error: 'Nieprawidłowe dane klienta' }, 400) }
   if (!Array.isArray(items) || !items.length) return { error: J({ error: 'Pusty koszyk' }, 400) }
+  const inv = parseInvoice(body.invoice)
+  if (inv.error) return { error: J({ error: inv.error }, 400) }
   if (items.length > 20) return { error: J({ error: 'Za dużo pozycji w koszyku' }, 400) }
 
   const prods = await db(`products?select=*&active=eq.true`)
@@ -248,6 +315,7 @@ async function checkout(body: CheckoutBody) {
     body: JSON.stringify({
       customer_name: body.customer.name.trim(), customer_email: body.customer.email.trim(),
       customer_phone: (body.customer.phone || '').trim(), gift_for: (body.gift_for || '').trim(),
+      invoice: parseInvoice(body.invoice).invoice,
       items: built.lines, total, status: 'pending',
       subtotal_grosze: built.subtotal, ...discountCols(applied),
     }),
@@ -420,6 +488,7 @@ Deno.serve(async (req) => {
     if (action === 'checkPromo') return await checkPromo(body, clientIp(req))
     if (action === 'order') return await getOrder(body)
     if (action === 'contact') return await contact(body)
+    if (action === 'nip') return await nipLookup(body)
     if (action === 'pay') return await payTest(body)
     if (action === 'health') return J({ ok: true, tpay: tpayConfigured(), test_payments: TEST_PAYMENTS, site: SITE, notify: NOTIFY_URL })
     return J({ error: 'unknown action' }, 400)
