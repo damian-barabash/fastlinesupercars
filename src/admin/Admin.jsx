@@ -4,6 +4,7 @@ import { DEFAULTS } from '../data/defaults.js'
 import VisualEditor from './VisualEditor.jsx'
 import Templates from './Templates.jsx'
 import Vouchers from './Vouchers.jsx'
+import Spam from './Spam.jsx'
 import './admin.css'
 
 const TABS = [
@@ -13,6 +14,7 @@ const TABS = [
   ['orders', 'Zamówienia'],
   ['vouchers', 'Vouchery'],
   ['templates', 'Szablony'],
+  ['spam', 'Spam'],
 ]
 
 // grosze <-> złote helpers for form fields
@@ -54,6 +56,7 @@ export default function Admin() {
         {tab === 'orders' && <Orders />}
         {tab === 'vouchers' && <Vouchers />}
         {tab === 'templates' && <Templates />}
+        {tab === 'spam' && <Spam />}
       </main>
     </div>
   )

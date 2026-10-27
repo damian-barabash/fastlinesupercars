@@ -2,6 +2,7 @@
 // login | logout | content.get/set | products.list/save | orders.list
 // vouchers.list/update/generate/import/batches/delete/deleteBatch | promos.list/save/delete
 // templates.* | upload | voucherPdfUrl | stats
+// spam.list / spam.release / spam.delete — kwarantanna poczty przychodzącej (mail-forward, migracja 008)
 //
 // Vouchery są dwóch rodzajów (kolumna `kind`, migracja 004):
 //   * `product` — kod na konkretny przejazd, realizowany przy rezerwacji terminu
@@ -509,6 +510,38 @@ Deno.serve(async (req) => {
               ? o.discounts.filter((d) => d.kind === 'voucher').reduce((s3, d) => s3 + (+d.discount || 0), 0)
               : o.discount_kind === 'voucher' ? (+o.discount_grosze || 0) : 0), 0),
         })
+      }
+
+      case 'spam.list': {
+        // body: { status?: 'held' | 'released' | 'all' }
+        const st = body.status === 'released' ? 'released' : body.status === 'all' ? '' : 'held'
+        let q = 'mail_spam?select=*&order=received_at.desc&limit=300'
+        if (st) q += `&status=eq.${st}`
+        const rows = await db(q)
+        const since = new Date(Date.now() - 30 * 864e5).toISOString()
+        const last30 = await db(`mail_spam?select=email_id&received_at=gte.${since}`)
+        return J({ rows, held_30d: (last30 || []).length })
+      }
+
+      case 'spam.release': {
+        // Przekazanie listu z kwarantanny do biura — robi to mail-forward (ma klucz Resend).
+        const id = String(body.email_id || '')
+        if (!/^[\w-]{8,80}$/.test(id)) return J({ error: 'Zły identyfikator listu' }, 400)
+        const r = await fetch(`${SB_URL}/functions/v1/mail-forward`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-fastline-internal': SERVICE_KEY },
+          body: JSON.stringify({ release: id, by: session.username }),
+        })
+        const out = await r.text()
+        if (!r.ok) return J({ error: out.slice(0, 300) || `mail-forward ${r.status}` }, r.status === 404 ? 404 : 502)
+        return J({ ok: true })
+      }
+
+      case 'spam.delete': {
+        const ids = (Array.isArray(body.ids) ? body.ids : [body.email_id]).map(String).filter((x: string) => /^[\w-]{8,80}$/.test(x))
+        if (!ids.length) return J({ error: 'Brak listów do usunięcia' }, 400)
+        await db(`mail_spam?email_id=in.(${ids.map((x: string) => `"${x}"`).join(',')})`, { method: 'DELETE' })
+        return J({ ok: true, deleted: ids.length })
       }
 
       default:

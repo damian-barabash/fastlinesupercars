@@ -295,3 +295,46 @@
 /* zamówienie z fakturą na firmę */
 .adm-pill.adm-pill-fv { margin-left: 8px; padding: 1px 7px; font-size: 10.5px; cursor: default; background: #fff1f0; border-color: #f2b3ae; color: #b60500; vertical-align: 1px; }
 .adm-order-invoice { margin: 4px 0; padding: 6px 10px; border-left: 3px solid #e10600; background: #fafafb; color: #3a3a40; line-height: 1.5; }
+
+/* ---------- Spam: kwarantanna poczty przychodzącej ---------- */
+.adm-spam-ok { margin: 0 0 12px; padding: 10px 14px; border-radius: 8px; background: #e8f8ee; border: 1px solid #86d9a5; color: #1d7a3a; font-size: 14px; }
+.adm-spam-table td { vertical-align: top; }
+.adm-spam-main { cursor: pointer; min-width: 260px; max-width: 640px; }
+.adm-spam-from { font-size: 12.5px; color: #7a7a84; word-break: break-all; }
+.adm-spam-subj { font-weight: 600; color: #1b1b20; margin: 2px 0; overflow-wrap: anywhere; }
+.adm-spam-why { font-size: 12px; }
+.adm-spam-more { margin-top: 8px; }
+.adm-spam-snippet { font-size: 13px; color: #44444c; background: #fafafb; border: 1px solid #ececf1; border-radius: 6px; padding: 8px 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.adm-spam-reasons { margin: 8px 0 4px 18px; font-size: 12.5px; color: #b91c1c; }
+.adm-spam-score { display: inline-block; min-width: 28px; text-align: center; font-weight: 700; font-size: 12px; padding: 2px 6px; border-radius: 4px; background: #fff1f0; color: #b60500; }
+.adm-spam-actions { white-space: nowrap; }
+.adm-spam-actions > * + * { margin-left: 6px; }
+.adm-spam-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+.adm-spam-lists textarea { width: 100%; font: 13px/1.6 ui-monospace, Menlo, monospace; padding: 10px 12px; border: 1.5px solid #e0e0e6; border-radius: 6px; resize: vertical; }
+@media (max-width: 720px) {
+  .adm-spam-lists { grid-template-columns: 1fr; }
+  .adm-spam-actions { white-space: normal; }
+  .adm-spam-actions > * { margin: 0 0 6px 0 !important; display: block; }
+}
+.adm-spam-date { display: none; font-size: 12px; color: #7a7a84; }
+@media (max-width: 720px) {
+  .adm-spam-dcol { display: none; }
+  .adm-spam-date { display: block; }
+  .adm-spam-main { min-width: 0; }
+}
+
+/* Nagłówek panelu na wąskim ekranie: zakładki w osobnym, przewijanym wierszu
+   (wcześniej nachodziły na treść strony). */
+@media (max-width: 1100px) {
+  .adm-head { flex-wrap: wrap; height: auto; gap: 0 16px; padding: 10px 16px 0; }
+  .adm-head-brand { flex: 1; }
+  .adm-tabs { order: 3; flex: 1 0 100%; flex-wrap: nowrap; overflow-x: auto; height: 46px; margin: 6px -16px 0; padding: 0 6px; scrollbar-width: none; }
+  .adm-tabs::-webkit-scrollbar { display: none; }
+  .adm-tabs button { padding: 0 12px; white-space: nowrap; flex: 0 0 auto; }
+  .adm-main { padding: 24px 16px 64px; }
+}
+@media (max-width: 720px) {
+  .adm-spam-table th, .adm-spam-table td { padding-left: 10px; padding-right: 10px; }
+  .adm-spam-actions .adm-badge { font-size: 9.5px; padding: 3px 6px; display: block; }
+  .adm-spam-actions { width: 96px; }
+}
