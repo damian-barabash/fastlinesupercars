@@ -41,7 +41,7 @@ export default function Swieta() {
     return () => { el.removeEventListener('pointermove', on); cancelAnimationFrame(raf) }
   }, [])
 
-  const words = [['Najszybszy', ''], ['prezent', 'xm-red'], ['pod choinką', '']]
+  const words = [['Najszybszy', ''], ['prezent', 'xm-red'], ['na Święta!', '']]
 
   return (
     <div className="xm">

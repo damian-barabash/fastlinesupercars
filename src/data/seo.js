@@ -49,7 +49,7 @@ export const PAGES = {
   ),
   '/swieta-2026': t(
     'Voucher świąteczny – przejazd supersamochodem w prezencie | Fastline Supercars',
-    'Najszybszy prezent pod choinką: przejazd Porsche 911, GR Supra, BMW M2 i innymi po torze, z imieniem bliskiej osoby na voucherze. PDF od razu na e-mail albo wydruk do Paczkomatu.',
+    'Najszybszy prezent na Święta! Przejazd Porsche 911, GR Supra, BMW M2 i innymi po torze, z imieniem bliskiej osoby na voucherze. PDF od razu na e-mail albo wydruk do Paczkomatu.',
     { noindex: !SWIETA_INDEX, image: '/swieta/og.jpg' },
   ),
   '/swieta-2026/voucher': t(
