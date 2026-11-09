@@ -388,3 +388,27 @@
 @media (max-width: 760px) {
   .xm-video video { -webkit-mask-image: radial-gradient(ellipse 56% 50% at 50% 54%, #000 52%, transparent 100%); mask-image: radial-gradient(ellipse 56% 50% at 50% 54%, #000 52%, transparent 100%); }
 }
+
+/* ---------- hero: tekst + vouchery wachlarzem ---------- */
+.xm-hero-in { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr); gap: 56px; align-items: center; text-align: left; }
+.xm-hero-txt .xm-h1 { font-size: clamp(40px, 5.4vw, 82px); margin: 0; }
+.xm-hero-txt .xm-h1 span:first-child { margin-left: 0; }
+.xm-hero-txt .xm-lead { margin: 22px 0 0; max-width: 540px; }
+.xm-hero-txt .xm-cta-row { justify-content: flex-start; }
+.xm-hero-cards { position: relative; perspective: 1600px; padding: 40px 6% 40px 0; }
+.xm-hc-float { position: relative; transform-style: preserve-3d; animation: xm-hc-float 7s ease-in-out infinite;
+  transform: rotateY(calc(var(--px, 0) * 14deg)) rotateX(calc(var(--py, 0) * -10deg)); transition: transform .6s cubic-bezier(.22,1,.36,1); }
+.xm-hc { box-shadow: 0 40px 80px -30px rgba(50,0,4,.85), 0 18px 34px -18px rgba(50,0,4,.6); }
+.xm-hc-front { position: relative; z-index: 2; transform: rotate(-5deg); }
+.xm-hc-back { position: absolute; z-index: 1; width: 82%; right: -9%; top: -16%; transform: rotate(8deg); filter: brightness(.82) saturate(.95); }
+.xm-hc-front::before { content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+@keyframes xm-hc-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
+@media (max-width: 960px) {
+  .xm-hero-in { grid-template-columns: minmax(0, 1fr); gap: 18px; text-align: center; }
+  .xm-hero-txt .xm-lead { margin: 18px auto 0; }
+  .xm-hero-txt .xm-cta-row { justify-content: center; }
+  .xm-hero-txt .xm-h1 span:first-child { margin-left: .11em; }
+  .xm-hero-cards { width: min(560px, 86%); margin: 18px auto 0; padding: 34px 7% 10px 0; }
+}
+.xm-hero-txt .xm-h1 span { margin: 0 .22em 0 0; }
+@media (max-width: 960px) { .xm-hero-txt .xm-h1 span { margin: 0 .11em; } }

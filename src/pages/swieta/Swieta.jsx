@@ -32,6 +32,9 @@ export default function Swieta() {
         const r = el.getBoundingClientRect()
         el.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`)
         el.style.setProperty('--my', `${((e.clientY - r.top) / r.height) * 100}%`)
+        // przechył kart voucherów (−0,5…0,5)
+        el.style.setProperty('--px', ((e.clientX - r.left) / r.width - 0.5).toFixed(3))
+        el.style.setProperty('--py', ((e.clientY - r.top) / r.height - 0.5).toFixed(3))
       })
     }
     el.addEventListener('pointermove', on)
@@ -46,6 +49,7 @@ export default function Swieta() {
         <div className="xm-hero-bg" aria-hidden="true"><Sparks n={26} /></div>
         <Lights />
         <div className="wrap xm-hero-in">
+         <div className="xm-hero-txt">
           <h1 className="xm-h1">
             {words.map(([w, c], i) => (
               <motion.span key={w} className={c} initial={{ opacity: 0, y: '0.5em', filter: 'blur(10px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ duration: 0.8, delay: 0.12 + i * 0.12, ease }}>
@@ -60,6 +64,14 @@ export default function Swieta() {
           <motion.div className="xm-cta-row" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.62, ease }}>
             <Link to={GO} className="btn xm-btn xm-light"><GiftIco />Stwórz voucher<span className="xm-arrow">→</span></Link>
             <span className="xm-meta">{Number.isFinite(from) ? <>od <b>{zl(from)}</b> · </> : null}ważny 12 miesięcy · 5 torów</span>
+          </motion.div>
+         </div>
+          {/* vouchery wachlarzem: z tyłu BMW, z przodu Porsche z imieniem — tak wygląda prezent */}
+          <motion.div className="xm-hero-cards" aria-hidden="true" initial={{ opacity: 0, y: 50, rotate: -12 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ duration: 1.1, delay: 0.3, ease }}>
+            <div className="xm-hc-float">
+              <GiftVoucher productId="bmw-m2" name="Ani" small className="xm-hc xm-hc-back" />
+              <GiftVoucher productId="porsche-911" name="Łukasza" line="Nowe Porsche 911 4 GTS — 3 okrążenia" className="xm-hc xm-hc-front" />
+            </div>
           </motion.div>
         </div>
         <motion.div className="xm-stage" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.1, delay: 0.35, ease }}>
