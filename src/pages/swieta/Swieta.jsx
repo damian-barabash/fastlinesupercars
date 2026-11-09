@@ -110,9 +110,26 @@ export default function Swieta() {
           <Link to={GO} className="btn xm-btn xm-light"><GiftIco />Stwórz voucher<span className="xm-arrow">→</span></Link>
         </div>
       </section>
+
+      {/* krzyżowa promocja: szkolenia z instruktorem w Fastline Racing Academy */}
+      <section className="xm-fra">
+        <div className="wrap">
+          <motion.a href={FRA} target="_blank" rel="noopener" className="xm-fra-card"
+            initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.9, ease }}>
+            <img className="xm-fra-img" src="/img/2023_12_photooo-min-scaled.webp" alt="" loading="lazy" />
+            <div className="xm-fra-txt">
+              <h2 className="xm-fra-h">Fastline to nie tylko przejazdy <span className="xm-red">supersamochodami.</span></h2>
+              <p className="xm-fra-p">Zobacz szkolenia z&nbsp;instruktorem w&nbsp;ramach Fastline Racing Academy.</p>
+              <span className="btn xm-btn xm-light xm-fra-btn">Zobacz szkolenia<span className="xm-arrow">›</span></span>
+            </div>
+          </motion.a>
+        </div>
+      </section>
     </div>
   )
 }
+
+const FRA = 'https://fastlineracingacademy.pl/swieta-2026'
 
 const NAMES = ['Łukasza', 'Ani', 'Taty', 'Kasi', 'Michała', 'Mamy', 'Szefa', 'Oli', 'Brata']
 

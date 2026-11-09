@@ -104,6 +104,43 @@
 .xm-reel::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 48% 60% at 50% 50%, rgba(118,8,15,.93) 30%, rgba(118,8,15,.35) 100%), linear-gradient(90deg, #7a0810, transparent 14%, transparent 86%, #7a0810); pointer-events: none; }
 .xm-reel-cta { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; text-align: center; padding: 0 24px; }
 
+/* ---------- stopka: szkolenia FRA — jasna karta z torem w tle ---------- */
+.xm-fra { padding: 10px 0 100px; }
+.xm-fra-card {
+  position: relative; display: flex; align-items: center; min-height: 380px; overflow: hidden; isolation: isolate;
+  background: #fff; color: var(--ink, #111); text-decoration: none;
+  box-shadow: 0 40px 80px -36px rgba(60,0,0,.75);
+}
+.xm-fra-img {
+  position: absolute; inset: 0 0 0 auto; width: 68%; height: 100%; object-fit: cover; object-position: 60% 55%; z-index: -2;
+  transform: scale(1.04); transition: transform 1.4s cubic-bezier(.22,1,.36,1), filter 1s;
+  filter: saturate(1) brightness(1.02);
+}
+.xm-fra-card::before { /* zdjęcie płynnie przechodzi w biel */
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, #fff 34%, rgba(255,255,255,.85) 46%, rgba(255,255,255,.12) 70%, rgba(255,255,255,0) 100%);
+}
+.xm-fra-card::after { /* cienka czerwona linia startowa u dołu */
+  content: ''; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--red);
+  transform: scaleX(.18); transform-origin: left; transition: transform .9s cubic-bezier(.22,1,.36,1);
+}
+.xm-fra-card:hover .xm-fra-img { transform: scale(1.09); filter: saturate(1.08) brightness(1.04); }
+.xm-fra-card:hover::after { transform: scaleX(1); }
+.xm-fra-card:hover .xm-arrow { transform: translateX(4px); }
+.xm-fra-txt { position: relative; padding: 56px 60px; max-width: 600px; }
+.xm-fra-h { font-size: clamp(26px, 3vw, 42px); line-height: 1.04; }
+.xm .xm-fra-h .xm-red { color: var(--red); }
+.xm-fra-p { margin-top: 16px; color: #5c5c66; font-size: clamp(15px, 1.2vw, 17px); line-height: 1.65; max-width: 420px; }
+.xm-fra-btn { margin-top: 30px; background: var(--red); color: #fff; box-shadow: 0 14px 28px -12px rgba(225,6,0,.6); }
+.xm-fra-card:hover .xm-fra-btn { transform: translateY(-2px); box-shadow: 0 18px 34px -12px rgba(225,6,0,.75); }
+@media (max-width: 760px) {
+  .xm-fra { padding-bottom: 72px; }
+  .xm-fra-card { flex-direction: column; align-items: stretch; min-height: 0; }
+  .xm-fra-img { position: relative; inset: auto; width: 100%; height: 220px; order: -1; }
+  .xm-fra-card::before { background: linear-gradient(180deg, rgba(255,255,255,0) 0, rgba(255,255,255,0) 130px, #fff 220px); }
+  .xm-fra-txt { padding: 0 24px 34px; margin-top: -30px; }
+}
+
 /* ---------- voucher (podgląd = PDF) ---------- */
 .gv { position: relative; container-type: inline-size; aspect-ratio: 4211 / 2028; overflow: hidden; background: #1a0000; box-shadow: 0 30px 60px -28px rgba(0,0,0,.9); user-select: none; }
 .gv img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
