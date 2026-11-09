@@ -338,3 +338,21 @@
   .adm-spam-actions .adm-badge { font-size: 9.5px; padding: 3px 6px; display: block; }
   .adm-spam-actions { width: 96px; }
 }
+
+/* ---------- Święta (vouchery świąteczne) ---------- */
+.adm-gift-mode { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
+.adm-gift-badge { display: inline-block; margin-top: 8px; padding: 6px 12px; font: 700 12px/1 var(--label); letter-spacing: .1em; background: #fff6dd; color: #8a6200; border: 1px solid #f0d58a; }
+.adm-gift-badge.is-live { background: #e8f8ee; color: #137a3d; border-color: #9fdcb5; }
+.adm-gift-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.adm-btn-go { background: var(--red); color: #fff; border-color: var(--red); }
+.adm-btn-go:hover { background: #b60500; color: #fff; }
+.adm-gift-fee { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #55555f; }
+.adm-gift-fee input { width: 70px; padding: 7px 9px; border: 1px solid #d8d8de; font-size: 14px; text-align: right; }
+.adm-pill.adm-gift-pill, .adm-pill.adm-gift-test { margin-left: 8px; padding: 1px 7px; font-size: 10.5px; cursor: default; vertical-align: 1px; }
+.adm-pill.adm-gift-pill { background: #fff1f0; border-color: #f2b3ae; color: #b60500; }
+.adm-pill.adm-gift-test { background: #fff6dd; border-color: #f0d58a; color: #8a6200; }
+.adm-gift-ship { min-width: 200px; line-height: 1.45; }
+.adm-gift-shipped { margin-top: 6px; color: #137a3d; font-weight: 600; font-size: 13px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.adm-gift-shipform { display: flex; gap: 6px; margin-top: 8px; }
+.adm-gift-shipform input { flex: 1; min-width: 0; padding: 7px 9px; border: 1px solid #d8d8de; font-size: 13px; }
+@media (max-width: 720px) { .adm-gift-actions { align-items: flex-start; } }

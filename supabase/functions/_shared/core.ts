@@ -203,6 +203,25 @@ type OrderRow = {
   discounts?: { kind: string; code: string; percent?: number; discount: number }[] | null
   invoice?: { nip: string; company: string; street: string; postal: string; city: string } | null
   items: { product_id: string; name: string; variant: string; price: number; qty: number }[]
+  // strona świąteczna (migracja 009)
+  campaign?: string | null; delivery?: string | null; delivery_fee?: number | null
+  delivery_data?: { locker: string; address?: string; phone: string; name?: string } | null
+  is_test?: boolean | null
+}
+
+/** Kampania świąteczna — osobne szablony vouchera (`templates/swieta/<produkt>.jpg`) i świąteczne maile. */
+export const CAMPAIGN = 'swieta-2026'
+
+/** Szablon PDF: świąteczny dla kampanii (gdy jest w Storage), inaczej zwykły szablon produktu. */
+async function pickTemplate(order: OrderRow, regular: string) {
+  if (order.campaign !== CAMPAIGN) return regular
+  const pid = order.items[0]?.product_id
+  // produkt „Voucher" (dowolna kwota) nie ma własnej grafiki — dostaje Porsche, jak w zwykłym sklepie
+  const path = `templates/swieta/${pid === 'voucher' ? 'porsche-911' : pid}.jpg`
+  const r = await fetch(`${SB_URL}/storage/v1/object/info/vouchery/${path}`, {
+    headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY },
+  })
+  return r.ok ? path : regular
 }
 
 /**
@@ -219,7 +238,9 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
   // szablon vouchera = produkt pierwszej pozycji; brak szablonu → domyślny
   const prods = await db('products?select=id,name,voucher_template')
   const first = prods.find((p: { id: string }) => p.id === order.items[0].product_id)
-  const template = first?.voucher_template || 'templates/alpine-a110.jpg'
+  const regularTpl = first?.voucher_template || 'templates/alpine-a110.jpg'
+  const template = await pickTemplate(order, regularTpl)
+  const gift = order.campaign === CAMPAIGN
   const code = voucherCode()
   const valid = new Date(); valid.setFullYear(valid.getFullYear() + 1)
   const validISO = valid.toISOString().slice(0, 10)
@@ -229,8 +250,11 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
 
   let pdfPath = '', pdfBytes: Uint8Array | null = null
   try {
-    const tpl = (await db(`voucher_templates?path=eq.${encodeURIComponent(template)}&select=layout`))?.[0]
-    pdfBytes = await makeVoucherPdf({ template, recipient, lines, validUntil: validPL, code, layout: tpl?.layout })
+    // świąteczny szablon ma ten sam układ co zwykły — bez własnego layoutu bierze layout zwykłego
+    const tpls = await db(`voucher_templates?path=in.(${[template, regularTpl].map((x) => `"${x}"`).join(',')})&select=path,layout`)
+    const layout = (tpls || []).find((x: { path: string }) => x.path === template)?.layout
+      || (tpls || []).find((x: { path: string }) => x.path === regularTpl)?.layout
+    pdfBytes = await makeVoucherPdf({ template, recipient, lines, validUntil: validPL, code, layout })
     pdfPath = `pdf/${code}.pdf`
     await storagePut(pdfPath, pdfBytes, 'application/pdf')
   } catch (e) {
@@ -285,20 +309,43 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
     <tr>
       <td style="padding:10px 0;color:#fff;font-size:14px;border-bottom:1px solid #2a2a30">${esc(it.name)}${it.variant ? ` <span style="color:#8a8a92">· ${esc(it.variant)}</span>` : ''} <span style="color:#8a8a92">× ${it.qty}</span></td>
       <td style="padding:10px 0;color:#fff;font-size:14px;border-bottom:1px solid #2a2a30" align="right">${zl(it.price * it.qty)}</td>
-    </tr>`).join('')
+    </tr>`).join('') + ((order.delivery_fee || 0) > 0 ? `
+    <tr>
+      <td style="padding:10px 0;color:#fff;font-size:14px;border-bottom:1px solid #2a2a30">Wydruk vouchera + wysyłka do Paczkomatu InPost</td>
+      <td style="padding:10px 0;color:#fff;font-size:14px;border-bottom:1px solid #2a2a30" align="right">${zl(order.delivery_fee!)}</td>
+    </tr>` : '')
+
+  // wysyłka wydruku do Paczkomatu (strona świąteczna)
+  const dd = order.delivery === 'inpost' ? order.delivery_data : null
+  const lockerLines = dd ? `Paczkomat <b style="color:#fff">${esc(dd.locker)}</b>${dd.address ? `<br>${esc(dd.address)}` : ''}<br>Odbiorca: ${esc(dd.name || order.customer_name)} · tel. ${esc(dd.phone)}` : ''
+  const testBox = order.is_test ? `<div style="background:#2a1d00;border:1px solid #d4a017;color:#f3d27a;font-size:12px;letter-spacing:1px;padding:10px 14px;margin:0 0 20px">TRYB TESTOWY — zamówienie utworzone bez płatności. Ten voucher służy wyłącznie do testów.</div>` : ''
 
   // faktura na firmę: biuro wystawia ją ręcznie, klient widzi, na jakie dane
   const inv = order.invoice
   const nipFmt = inv ? `${inv.nip.slice(0, 3)}-${inv.nip.slice(3, 6)}-${inv.nip.slice(6, 8)}-${inv.nip.slice(8)}` : ''
   const invoiceLines = inv ? `${esc(inv.company)}<br>NIP: ${nipFmt}<br>${esc(inv.street)}, ${esc(inv.postal)} ${esc(inv.city)}` : ''
 
-  const html = mailShell(`
+  const intro = gift ? `
+    ${testBox}
+    <div style="color:#d4a017;font-size:12px;letter-spacing:3px;font-weight:bold">WESOŁYCH ŚWIĄT · VOUCHER PREZENTOWY</div>
+    <h1 style="color:#fff;font-size:24px;margin:10px 0 4px">Prezent gotowy, ${esc(order.customer_name.split(' ')[0])}!</h1>
+    <p style="color:#b9b9c0;font-size:14px;line-height:1.7;margin:12px 0 24px">
+      Zamówienie <b style="color:#fff">#${order.number}</b> ${order.is_test ? 'zostało utworzone' : 'zostało opłacone'}.
+      W załączniku jest <b style="color:#fff">świąteczny voucher PDF dla ${esc(recipient)}</b> — wydrukuj go
+      albo prześlij dalej i połóż pod choinką.
+    </p>
+    ${dd ? `<div style="border-left:3px solid #d4a017;padding:4px 0 4px 16px;margin:0 0 24px">
+      <div style="color:#8a8a92;font-size:11px;letter-spacing:2px">WYDRUK W KOPERCIE — PACZKOMAT INPOST</div>
+      <div style="color:#b9b9c0;font-size:14px;line-height:1.7;margin-top:6px">${lockerLines}</div>
+      <div style="color:#8a8a92;font-size:12px;margin-top:6px">Wyślemy go w ciągu 2 dni roboczych — numer przesyłki przyjdzie SMS-em od InPost.</div>
+    </div>` : ''}` : `
     <div style="color:#c8102e;font-size:12px;letter-spacing:3px;font-weight:bold">POTWIERDZENIE ZAKUPU</div>
     <h1 style="color:#fff;font-size:24px;margin:10px 0 4px">Dziękujemy, ${esc(order.customer_name.split(' ')[0])}!</h1>
     <p style="color:#b9b9c0;font-size:14px;line-height:1.7;margin:12px 0 24px">
       Twoje zamówienie <b style="color:#fff">#${order.number}</b> zostało opłacone.
       W załączniku znajdziesz <b style="color:#fff">voucher PDF</b> — gotowy do wydruku lub podarowania.
-    </p>
+    </p>`
+  const html = mailShell(`${intro}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsRows}${discountRow}
       <tr><td style="padding:14px 0;color:#8a8a92;font-size:13px;letter-spacing:1px">RAZEM</td>
       <td style="padding:14px 0;color:#fff;font-size:20px;font-weight:bold" align="right">${zl(order.total)}</td></tr>
@@ -318,11 +365,22 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
   `)
 
   const attachments = pdfBytes ? [{ filename: `Voucher-${code}.pdf`, content: b64(pdfBytes) }] : undefined
-  const sent = await sendMail(order.customer_email, `Voucher ${code} — potwierdzenie zakupu #${order.number}`, html, attachments)
+  const subject = gift
+    ? `${order.is_test ? '[TEST] ' : ''}Voucher świąteczny dla ${recipient} — ${code}`
+    : `Voucher ${code} — potwierdzenie zakupu #${order.number}`
+  const sent = await sendMail(order.customer_email, subject, html, attachments)
+
+  // tryb testowy strony świątecznej: mail tylko do kupującego, biuro nic nie dostaje
+  if (order.is_test) return { already: false, code, valid_until: validISO, mail_sent: sent.ok, pdf: !!pdfPath }
 
   // kopia dla biura — każde opłacone zamówienie ląduje w skrzynce rezerwacji
-  await sendMail(CONTACT_TO, `Nowe zamówienie #${order.number} — ${order.customer_name} (${zl(order.total)})${inv ? ' — FAKTURA' : ''}`, mailShell(`
-    <div style="color:#c8102e;font-size:12px;letter-spacing:3px;font-weight:bold">NOWE ZAMÓWIENIE</div>
+  await sendMail(CONTACT_TO, `${dd ? 'DO WYSŁANIA — INPOST — ' : ''}${gift ? 'Voucher świąteczny' : 'Nowe zamówienie'} #${order.number} — ${order.customer_name} (${zl(order.total)})${inv ? ' — FAKTURA' : ''}`, mailShell(`
+    ${dd ? `<div style="background:#131316;border:1px solid #d4a017;padding:16px 20px;margin:0 0 18px">
+      <div style="color:#d4a017;font-size:11px;letter-spacing:2px;font-weight:bold">DO WYSŁANIA — WYDRUK DO PACZKOMATU</div>
+      <div style="color:#b9b9c0;font-size:14px;line-height:1.7;margin-top:6px">${lockerLines}</div>
+      <div style="color:#8a8a92;font-size:12px;margin-top:6px">Po nadaniu wpisz numer przesyłki w panelu → Święta.</div>
+    </div>` : ''}
+    <div style="color:#c8102e;font-size:12px;letter-spacing:3px;font-weight:bold">${gift ? 'VOUCHER ŚWIĄTECZNY' : 'NOWE ZAMÓWIENIE'}</div>
     <h1 style="color:#fff;font-size:20px;margin:10px 0">#${order.number} · ${zl(order.total)}</h1>
     <p style="color:#b9b9c0;font-size:14px;line-height:1.8">
       Klient: <b style="color:#fff">${esc(order.customer_name)}</b><br>

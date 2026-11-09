@@ -5,6 +5,7 @@ import VisualEditor from './VisualEditor.jsx'
 import Templates from './Templates.jsx'
 import Vouchers from './Vouchers.jsx'
 import Spam from './Spam.jsx'
+import Gifts from './Gifts.jsx'
 import './admin.css'
 
 const TABS = [
@@ -12,6 +13,7 @@ const TABS = [
   ['editor', 'Edycja strony'],
   ['products', 'Produkty'],
   ['orders', 'Zamówienia'],
+  ['gifts', 'Święta'],
   ['vouchers', 'Vouchery'],
   ['templates', 'Szablony'],
   ['spam', 'Spam'],
@@ -54,6 +56,7 @@ export default function Admin() {
         {tab === 'editor' && <VisualEditor />}
         {tab === 'products' && <Products />}
         {tab === 'orders' && <Orders />}
+        {tab === 'gifts' && <Gifts />}
         {tab === 'vouchers' && <Vouchers />}
         {tab === 'templates' && <Templates />}
         {tab === 'spam' && <Spam />}
@@ -516,7 +519,7 @@ function Orders() {
               {rows.map((o) => (
                 <tr key={o.id} onClick={() => setOpen(open === o.id ? null : o.id)} className="adm-row-click">
                   <td>#{o.number}</td>
-                  <td><b>{o.customer_name}</b>{o.invoice && <span className="adm-pill adm-pill-fv" title={`Faktura: ${o.invoice.company}`}>FV</span>}<div className="adm-muted">{o.customer_email}</div>
+                  <td><b>{o.customer_name}</b>{o.invoice && <span className="adm-pill adm-pill-fv" title={`Faktura: ${o.invoice.company}`}>FV</span>}{o.campaign && <span className="adm-pill adm-gift-pill" title="Voucher świąteczny">ŚWIĘTA</span>}{o.is_test && <span className="adm-pill adm-gift-test">TEST</span>}<div className="adm-muted">{o.customer_email}</div>
                     {open === o.id && (
                       <div className="adm-order-detail">
                         {o.customer_phone && <div>Tel: {o.customer_phone}</div>}

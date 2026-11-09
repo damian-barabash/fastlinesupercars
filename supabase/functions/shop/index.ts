@@ -2,6 +2,12 @@
 // Akcje: checkout (zamówienie + transakcja Tpay) | checkPromo | order (status) | contact
 //        nip (dane firmy z „Białej listy" Ministerstwa Finansów — podpowiedź do faktury)
 //        pay — WYŁĄCZNIE tryb testowy, za flagą SHOP_TEST_PAYMENTS=1
+//        giftInfo — tryb strony świątecznej (/swieta-2026) i cena wysyłki InPost
+//
+// Strona świąteczna (`campaign: 'swieta-2026'`) używa tego samego checkoutu: jeden produkt,
+// obowiązkowe imię obdarowanego, dostawa e-mail albo wydruk do Paczkomatu (+ opłata z `settings`).
+// `settings.gift_mode = 'test'` → voucher powstaje od razu bez płatności (`orders.is_test`),
+// mail idzie tylko do kupującego. `live` → zwykła ścieżka Tpay.
 //
 // Zasada: ceny liczy serwer z tabeli `products`. Klient przysyła tylko id produktu,
 // wariant i sztuki (a przy produkcie z dowolną kwotą — kwotę, sprawdzaną z granicami z bazy) — dzięki temu nowy produkt dodany w panelu działa od razu,
@@ -14,7 +20,7 @@
 //     odejmują się po kodach procentowych, każdy do wysokości tego, co zostało do zapłaty.
 //     Bon jest rezerwowany przy zakładaniu zamówienia i wypalany dopiero po potwierdzonej
 //     płatności; gdy kody pokrywają całość, zamówienie realizuje się od razu, bez bramki.
-import { CORS, J, db, esc, rpc, SITE, SB_URL, CONTACT_TO, sendMail, mailShell, fulfillOrder, zl } from '../_shared/core.ts'
+import { CORS, J, db, esc, rpc, SITE, SB_URL, CONTACT_TO, sendMail, mailShell, fulfillOrder, zl, CAMPAIGN } from '../_shared/core.ts'
 import { tpayConfigured, tpayCreateTransaction } from '../_shared/tpay.ts'
 
 const TEST_PAYMENTS = Deno.env.get('SHOP_TEST_PAYMENTS') === '1'
@@ -24,7 +30,55 @@ const NOTIFY_URL = `${SB_URL}/functions/v1/tpay-notify`
 type Item = { product_id: string; variant?: string; qty?: number; amount?: number }
 type Customer = { name: string; email: string; phone?: string }
 type Invoice = { nip?: string; company?: string; street?: string; postal?: string; city?: string }
-type CheckoutBody = { customer: Customer; gift_for?: string; invoice?: Invoice | null; items: Item[]; codes?: string[]; promo?: string; return_origin?: string }
+type Delivery = { locker?: string; address?: string; phone?: string; name?: string }
+type CheckoutBody = {
+  customer: Customer; gift_for?: string; invoice?: Invoice | null; items: Item[]; codes?: string[]; promo?: string; return_origin?: string
+  campaign?: string; delivery?: string; delivery_data?: Delivery | null
+}
+
+// ---------- strona świąteczna ----------
+
+/** Tryb strony i cena wysyłki — z `settings`, zmieniane w panelu (zakładka Święta). */
+async function giftSettings() {
+  const rows = await db(`settings?key=in.(gift_mode,gift_inpost_grosze)&select=key,value`)
+  const m: Record<string, string> = {}
+  for (const r of rows || []) m[r.key] = r.value
+  const inpost = Math.max(0, Math.round(Number(m.gift_inpost_grosze ?? 5000)) || 0)
+  return { mode: m.gift_mode === 'live' ? 'live' : 'test', inpost }
+}
+
+const LOCKER_RE = /^[A-Z]{3}\d{1,4}[A-Z]{0,3}$/
+
+/** Dane kampanii z koszyka świątecznego: { error } albo kolumny do zapisu przy zamówieniu. */
+type GiftParsed = { error?: string; cols?: Record<string, unknown> | null; fee?: number; test?: boolean }
+async function parseGift(body: CheckoutBody): Promise<GiftParsed> {
+  if (!body.campaign) return { cols: null, fee: 0, test: false }
+  if (body.campaign !== CAMPAIGN) return { error: 'Ta kampania już się zakończyła' }
+  if (body.items?.length !== 1 || Math.floor(Number(body.items[0].qty) || 1) !== 1)
+    return { error: 'Voucher świąteczny to jeden prezent na zamówienie' }
+  const forName = String(body.gift_for || '').trim().replace(/\s+/g, ' ')
+  if (forName.length < 2 || forName.length > 40) return { error: 'Wpisz imię osoby obdarowanej (2–40 znaków)' }
+  const st = await giftSettings()
+  const delivery = body.delivery === 'inpost' ? 'inpost' : 'email'
+  let delivery_data = null
+  if (delivery === 'inpost') {
+    const d = body.delivery_data || {}
+    const locker = String(d.locker || '').toUpperCase().replace(/\s/g, '')
+    const phone = String(d.phone || '').trim().slice(0, 30)
+    if (!LOCKER_RE.test(locker)) return { error: 'Wybierz paczkomat InPost' }
+    if (phone.replace(/\D/g, '').length < 9) return { error: 'Podaj telefon do powiadomień InPost' }
+    delivery_data = {
+      locker, phone,
+      address: String(d.address || '').trim().slice(0, 160),
+      name: String(d.name || body.customer?.name || '').trim().slice(0, 80),
+    }
+  }
+  const fee = delivery === 'inpost' ? st.inpost : 0
+  return {
+    fee, test: st.mode === 'test',
+    cols: { campaign: CAMPAIGN, delivery, delivery_fee: fee, delivery_data, is_test: st.mode === 'test', gift_for: forName },
+  }
+}
 
 // ---------- faktura na firmę ----------
 
@@ -300,6 +354,18 @@ async function buildOrder(body: CheckoutBody): Promise<Built> {
 async function checkout(body: CheckoutBody) {
   const built = await buildOrder(body)
   if (built.error) return built.error
+  const gift = await parseGift(body)
+  if (gift.error) return J({ error: gift.error }, 400)
+  const fee = gift.fee || 0
+
+  if (gift.test) {
+    // W teście bon kwotowy spaliłby się naprawdę — prawdziwe pieniądze klienta. Kody procentowe działają.
+    if (built.applied!.some((a) => a.kind === 'voucher'))
+      return J({ error: 'W trybie testowym bony kwotowe są wyłączone — użyj kodu rabatowego albo usuń bon' }, 400)
+    const hour = new Date(Date.now() - 3600 * 1000).toISOString()
+    const tests = await db(`orders?is_test=is.true&created_at=gte.${hour}&select=id`)
+    if ((tests?.length || 0) >= 40) return J({ error: 'Limit zamówień testowych na godzinę — spróbuj później' }, 429)
+  }
 
   // prosty hamulec: jeden adres nie zakłada dziesiątek zamówień w kilka minut
   const since = new Date(Date.now() - 10 * 60 * 1000).toISOString()
@@ -307,7 +373,7 @@ async function checkout(body: CheckoutBody) {
   if ((recent?.length || 0) >= 10) return J({ error: 'Zbyt wiele prób płatności. Spróbuj za kilka minut.' }, 429)
 
   let applied = built.applied!
-  let discount = built.discount!, total = built.total!
+  let discount = built.discount!, total = built.total! + fee
   const hasVoucher = applied.some((a) => a.kind === 'voucher')
 
   const [order] = await db('orders', {
@@ -318,8 +384,23 @@ async function checkout(body: CheckoutBody) {
       invoice: parseInvoice(body.invoice).invoice,
       items: built.lines, total, status: 'pending',
       subtotal_grosze: built.subtotal, ...discountCols(applied),
+      ...(gift.cols || {}),
     }),
   })
+
+  // Strona świąteczna w trybie testowym: voucher od razu, bez bramki (mail tylko do kupującego).
+  if (gift.test) {
+    try {
+      await db(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ payment_method: 'test' }) })
+      const res = await fulfillOrder(order, 0)
+      console.log(`checkout: #${order.number} TEST świąteczny → ${res.code}`)
+      return J({ order_id: order.id, number: order.number, total, paid: true, test: true, voucher_code: res.code, mail_sent: res.mail_sent })
+    } catch (e) {
+      console.error('checkout: test świąteczny', e)
+      await db(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled', payment_error: String(e).slice(0, 300) }) })
+      return J({ error: 'Nie udało się przygotować vouchera. Spróbuj ponownie.' }, 502)
+    }
+  }
 
   // Bony kwotowe blokujemy dopiero teraz, na konkretne zamówienie i atomowo (funkcja SQL),
   // żeby ten sam kod nie opłacił dwóch zamówień równolegle.
@@ -346,7 +427,7 @@ async function checkout(body: CheckoutBody) {
     if (realDiscount !== discount) {
       applied = real
       discount = realDiscount
-      total = built.subtotal! - discount
+      total = built.subtotal! - discount + fee
       await db(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ total, ...discountCols(applied) }) })
     }
   }
@@ -382,7 +463,7 @@ async function checkout(body: CheckoutBody) {
 
   try {
     const back = returnOrigin(body.return_origin)
-    const desc = `Fastline Supercars — zamówienie #${order.number}`
+    const desc = `Fastline Supercars — ${gift.cols ? 'voucher świąteczny' : 'zamówienie'} #${order.number}`
     const tx = await tpayCreateTransaction({
       amountGrosze: total,
       description: desc,
@@ -489,6 +570,7 @@ Deno.serve(async (req) => {
     if (action === 'order') return await getOrder(body)
     if (action === 'contact') return await contact(body)
     if (action === 'nip') return await nipLookup(body)
+    if (action === 'giftInfo') return J(await giftSettings())
     if (action === 'pay') return await payTest(body)
     if (action === 'health') return J({ ok: true, tpay: tpayConfigured(), test_payments: TEST_PAYMENTS, site: SITE, notify: NOTIFY_URL })
     return J({ error: 'unknown action' }, 400)

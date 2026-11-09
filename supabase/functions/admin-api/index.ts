@@ -3,6 +3,7 @@
 // vouchers.list/update/generate/import/batches/delete/deleteBatch | promos.list/save/delete
 // templates.* | upload | voucherPdfUrl | stats
 // spam.list / spam.release / spam.delete — kwarantanna poczty przychodzącej (mail-forward, migracja 008)
+// gifts.list / gifts.ship / gifts.unship / gifts.settings — vouchery świąteczne (/swieta-2026, migracja 009)
 //
 // Vouchery są dwóch rodzajów (kolumna `kind`, migracja 004):
 //   * `product` — kod na konkretny przejazd, realizowany przy rezerwacji terminu
@@ -329,7 +330,15 @@ Deno.serve(async (req) => {
           headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, 'Content-Type': 'application/json' },
           body: JSON.stringify({ prefix: 'templates/', limit: 100, sortBy: { column: 'name', order: 'asc' } }),
         })
-        const objs = (await lr.json()) as { name: string }[]
+        // podfolder `swieta/` (szablony kampanii świątecznej) pokazujemy jako zwykłe pliki „swieta/…"
+        const objs = ((await lr.json()) as { name: string; id: string | null }[]).filter((o) => o.id)
+        const sw = await fetch(`${SB_URL}/storage/v1/object/list/vouchery`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prefix: 'templates/swieta/', limit: 100, sortBy: { column: 'name', order: 'asc' } }),
+        })
+        for (const o of ((await sw.json().catch(() => [])) as { name: string; id: string | null }[]))
+          if (o.id) objs.push({ ...o, name: `swieta/${o.name}` })
         const layouts = await db('voucher_templates?select=path,layout')
         const layoutBy: Record<string, unknown> = {}
         for (const l of layouts || []) layoutBy[l.path] = l.layout
@@ -476,7 +485,7 @@ Deno.serve(async (req) => {
 
       case 'stats': {
         const [orders, vouchers] = await Promise.all([
-          db('orders?select=status,total,created_at,discount_grosze,discount_kind,discounts'),
+          db('orders?is_test=is.false&select=status,total,created_at,discount_grosze,discount_kind,discounts'),
           db('vouchers?select=status,kind,amount_grosze'),
         ])
         const bony = (vouchers || []).filter((v: { kind: string }) => v.kind === 'amount')
@@ -510,6 +519,48 @@ Deno.serve(async (req) => {
               ? o.discounts.filter((d) => d.kind === 'voucher').reduce((s3, d) => s3 + (+d.discount || 0), 0)
               : o.discount_kind === 'voucher' ? (+o.discount_grosze || 0) : 0), 0),
         })
+      }
+
+      case 'gifts.list': {
+        const orders = await db(`orders?campaign=not.is.null&select=*&order=created_at.desc&limit=500`)
+        const ids = orders.filter((o: { voucher_id?: string }) => o.voucher_id).map((o: { voucher_id: string }) => o.voucher_id)
+        if (ids.length) {
+          const vs = await db(`vouchers?id=in.(${ids.join(',')})&select=id,code,pdf_path,status,valid_until`)
+          const byId: Record<string, unknown> = {}
+          for (const v of vs) byId[v.id] = v
+          for (const o of orders) if (o.voucher_id) o.voucher = byId[o.voucher_id] || null
+        }
+        const st = await db(`settings?key=in.(gift_mode,gift_inpost_grosze)&select=key,value`)
+        const m: Record<string, string> = {}
+        for (const r of st || []) m[r.key] = r.value
+        return J({ orders, mode: m.gift_mode === 'live' ? 'live' : 'test', inpost: +(m.gift_inpost_grosze ?? 5000) })
+      }
+
+      case 'gifts.ship': {
+        if (!/^[0-9a-f-]{36}$/i.test(body.id || '')) return J({ error: 'Brak zamówienia' }, 400)
+        const no = String(body.shipping_no || '').trim().slice(0, 60)
+        await db(`orders?id=eq.${body.id}&delivery=eq.inpost`, { method: 'PATCH', body: JSON.stringify({ shipped_at: new Date().toISOString(), shipping_no: no || null }) })
+        return J({ ok: true })
+      }
+
+      case 'gifts.unship': {
+        if (!/^[0-9a-f-]{36}$/i.test(body.id || '')) return J({ error: 'Brak zamówienia' }, 400)
+        await db(`orders?id=eq.${body.id}`, { method: 'PATCH', body: JSON.stringify({ shipped_at: null, shipping_no: null }) })
+        return J({ ok: true })
+      }
+
+      case 'gifts.settings': {
+        const data: Record<string, string> = {}
+        if (body.mode === 'test' || body.mode === 'live') data.gift_mode = body.mode
+        if (body.inpost != null) {
+          const g = Math.round(Number(body.inpost))
+          if (!Number.isFinite(g) || g < 0 || g > 100000) return J({ error: 'Nieprawidłowa cena wysyłki' }, 400)
+          data.gift_inpost_grosze = String(g)
+        }
+        const entries = Object.entries(data).map(([key, value]) => ({ key, value }))
+        if (entries.length)
+          await db('settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify(entries) })
+        return J({ ok: true })
       }
 
       case 'spam.list': {

@@ -133,3 +133,4 @@ h1, h2, h3, h4, .display {
   html { scroll-behavior: auto; }
   .marquee-inner { animation: none; }
 }
+.xm-loading { min-height: 100vh; background: #0a0a0c; }

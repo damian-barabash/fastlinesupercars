@@ -8,6 +8,10 @@ export const DEFAULT_IMAGE = '/img/2023_04_g-6.webp'
 
 const t = (title, description, extra = {}) => ({ title, description, ...extra })
 
+// Strona świąteczna /swieta-2026 jest gotowa, ale poza indeksem, dopóki właściciel nie powie „włączamy".
+// `true` → landing dostaje index,follow i trafia do sitemapy przy następnym buildzie (konfigurator zostaje noindex).
+export const SWIETA_INDEX = false
+
 export const PAGES = {
   '/': t(
     'Fastline Supercars – przejażdżka supersamochodem po torze wyścigowym',
@@ -42,6 +46,16 @@ export const PAGES = {
     'Dziękujemy za zamówienie | Fastline Supercars',
     'Potwierdzenie zamówienia i kod vouchera.',
     { noindex: true },
+  ),
+  '/swieta-2026': t(
+    'Voucher świąteczny – przejazd supersamochodem w prezencie | Fastline Supercars',
+    'Najszybszy prezent pod choinką: przejazd Porsche 911, GR Supra, BMW M2 i innymi po torze, z imieniem bliskiej osoby na voucherze. PDF od razu na e-mail albo wydruk do Paczkomatu.',
+    { noindex: !SWIETA_INDEX, image: '/swieta/og.jpg' },
+  ),
+  '/swieta-2026/voucher': t(
+    'Konfigurator vouchera świątecznego | Fastline Supercars',
+    'Wybierz auto, wpisz imię i zapakuj voucher świąteczny na przejazd po torze.',
+    { noindex: true, image: '/swieta/og.jpg' },
   ),
   '/regulamin-platnosci': t(
     'Regulamin płatności | Fastline Supercars',

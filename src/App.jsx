@@ -21,6 +21,9 @@ import Legal from './pages/Legal.jsx'
 import NotFound from './pages/NotFound.jsx'
 
 const Admin = lazy(() => import('./admin/Admin.jsx'))
+// strona świąteczna — osobny chunk, reszta serwisu jej nie pobiera
+const Swieta = lazy(() => import('./pages/swieta/Swieta.jsx'))
+const SwietaVoucher = lazy(() => import('./pages/swieta/SwietaVoucher.jsx'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -81,6 +84,8 @@ export default function App() {
         <Route path="/dziekujemy" element={<Dziekujemy />} />
         <Route path="/regulamin-platnosci" element={<Legal doc="regulamin" />} />
         <Route path="/polityka-prywatnosci" element={<Legal doc="privacy" />} />
+        <Route path="/swieta-2026" element={<Suspense fallback={<div className="xm-loading" />}><Swieta /></Suspense>} />
+        <Route path="/swieta-2026/voucher" element={<Suspense fallback={<div className="xm-loading" />}><SwietaVoucher /></Suspense>} />
         <Route path="/privacy-policy" element={<Navigate to="/polityka-prywatnosci" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
