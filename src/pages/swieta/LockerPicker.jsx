@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { lockerByCode, lockersNear, geocode, myPosition, isLockerCode, addressOf, fmtKm, WARSZAWA } from "./inpost";
 import "./locker.css";
 
@@ -54,7 +55,8 @@ export default function LockerPicker({ value, onPick, en = false }) {
         </div>
       )}
       {mode === "list" && <LockerSearch X={X} current={value} onPick={pick} />}
-      {map && <LockerMap X={X} current={value} onPick={pick} onClose={() => setMap(false)} />}
+      {/* mapa w portalu — karta konfiguratora ma clip-path i transform, które obcinały pop-up */}
+      {map && createPortal(<LockerMap X={X} current={value} onPick={pick} onClose={() => setMap(false)} />, document.body)}
     </div>
   );
 }

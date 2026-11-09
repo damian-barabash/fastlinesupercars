@@ -10,6 +10,8 @@ import LockerPicker from './LockerPicker.jsx'
 import { addressOf } from './inpost.js'
 import { useOswald } from './fonts.js'
 import { GiftIco } from './Swieta.jsx'
+import Lights from './Lights.jsx'
+import { createPortal } from 'react-dom'
 import './swieta.css'
 
 /* /swieta-2026/voucher — konfigurator vouchera świątecznego.
@@ -200,6 +202,7 @@ export default function SwietaVoucher() {
     <div className="xm xm-cfg">
       <section className="xm-cfg-head">
         <div className="xm-hero-bg" aria-hidden="true" />
+        <Lights />
         <div className="wrap">
           <Link to="/swieta-2026" className="xm-back">← Święta 2026</Link>
           <h1 className="xm-h2">Twój voucher <span className="xm-red">świąteczny</span></h1>
@@ -375,7 +378,7 @@ export default function SwietaVoucher() {
               {k !== 'gotowe' && (
                 <>
                   <div className="xm-foot-sum">{p && price > 0 && <><span>{short(p.name)}</span><b>{zl(price + fee)}</b></>}</div>
-                  <button type="button" className={`btn btn-red xm-btn xm-next ${problem() ? 'is-locked' : ''}`} onClick={next}>Dalej<span className="xm-arrow">→</span></button>
+                  <button type="button" className={`btn xm-btn xm-light xm-next ${problem() ? 'is-locked' : ''}`} onClick={next}>Dalej<span className="xm-arrow">→</span></button>
                 </>
               )}
             </div>
@@ -458,7 +461,8 @@ function PackShow({ productId, forName, line, email, delivery, locker, create, o
     return () => { alive = false; timers.forEach(clearTimeout); document.documentElement.classList.remove('swl-lock'); lockScroll(false) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return (
+  // portal do <body>: przodkowie mają transform / clip-path, które obcinałyby `position: fixed`
+  return createPortal(
     <div className={`xm-pk is-${phase}`} role="dialog" aria-live="polite" data-lenis-prevent>
       <div className="xm-pk-bg" />
       {phase !== 'done' && (
@@ -475,25 +479,26 @@ function PackShow({ productId, forName, line, email, delivery, locker, create, o
           {phase === 'error' && (
             <div className="xm-pk-err">
               <p>{res?.error}</p>
-              <button type="button" className="btn btn-red xm-btn" onClick={onClose}>Wróć i popraw</button>
+              <button type="button" className="btn xm-btn xm-light" onClick={onClose}>Wróć i popraw</button>
             </div>
           )}
         </div>
       )}
       {phase === 'done' && (
         <motion.div className="xm-done" initial={{ opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.6, ease }}>
-          <span className="xm-eyebrow"><span className="xm-dot" />{res?.test ? 'Test · ' : ''}Dziękujemy</span>
+          {res?.test && <span className="xm-testtag">Tryb testowy</span>}
           <h2 className="xm-h2">Wszystko jest <span className="xm-red">na mailu</span></h2>
           <p className="xm-lead">Voucher dla <b>{forName}</b> właśnie poleciał na <b>{email}</b>.</p>
           {res?.voucher_code && <div className="xm-done-code"><small>Kod vouchera</small><b>{res.voucher_code}</b></div>}
           {delivery === 'inpost' && <p className="xm-hint">Wydruk w kopercie wyślemy do Paczkomatu <b>{locker}</b> — numer przesyłki przyjdzie SMS-em od InPost.</p>}
           <div className="xm-done-btns">
-            <button type="button" className="btn btn-red xm-btn" onClick={onAgain}><GiftIco />Kolejny voucher</button>
+            <button type="button" className="btn xm-btn xm-light" onClick={onAgain}><GiftIco />Kolejny voucher</button>
             <Link to="/" className="btn xm-ghost">Strona główna</Link>
           </div>
         </motion.div>
       )}
-    </div>
+    </div>,
+    document.body,
   )
 }
 

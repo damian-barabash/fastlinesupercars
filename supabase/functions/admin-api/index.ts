@@ -3,7 +3,7 @@
 // vouchers.list/update/generate/import/batches/delete/deleteBatch | promos.list/save/delete
 // templates.* | upload | voucherPdfUrl | stats
 // spam.list / spam.release / spam.delete — kwarantanna poczty przychodzącej (mail-forward, migracja 008)
-// gifts.list / gifts.ship / gifts.unship / gifts.settings — vouchery świąteczne (/swieta-2026, migracja 009)
+// gifts.list / gifts.ship / gifts.unship / gifts.settings / gifts.delete — vouchery świąteczne (/swieta-2026, migracja 009)
 //
 // Vouchery są dwóch rodzajów (kolumna `kind`, migracja 004):
 //   * `product` — kod na konkretny przejazd, realizowany przy rezerwacji terminu
@@ -547,6 +547,27 @@ Deno.serve(async (req) => {
         if (!/^[0-9a-f-]{36}$/i.test(body.id || '')) return J({ error: 'Brak zamówienia' }, 400)
         await db(`orders?id=eq.${body.id}`, { method: 'PATCH', body: JSON.stringify({ shipped_at: null, shipping_no: null }) })
         return J({ ok: true })
+      }
+
+      case 'gifts.delete': {
+        // Usunięcie zamówienia świątecznego razem z wystawionym voucherem i jego PDF-em —
+        // samo `orders.delete` zostawiłoby kod vouchera aktywny (vouchers.order_id → set null).
+        if (!/^[0-9a-f-]{36}$/i.test(body.id || '')) return J({ error: 'Brak zamówienia' }, 400)
+        const o = (await db(`orders?id=eq.${body.id}&campaign=not.is.null&select=id,number`))?.[0]
+        if (!o) return J({ error: 'To nie jest zamówienie świąteczne' }, 404)
+        const vs = await db(`vouchers?order_id=eq.${o.id}&kind=eq.product&select=id,pdf_path`)
+        const pdfs = (vs || []).map((v: { pdf_path?: string }) => v.pdf_path).filter(Boolean)
+        if (pdfs.length) {
+          await fetch(`${SB_URL}/storage/v1/object/vouchery`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prefixes: pdfs }),
+          }).catch((e) => console.error('gifts.delete pdf', e))
+        }
+        if (vs?.length) await db(`vouchers?id=in.(${vs.map((v: { id: string }) => v.id).join(',')})`, { method: 'DELETE' })
+        await db(`orders?id=eq.${o.id}`, { method: 'DELETE' })
+        console.log(`gifts.delete: #${o.number} (+${vs?.length || 0} voucher)`)
+        return J({ ok: true, number: o.number })
       }
 
       case 'gifts.settings': {

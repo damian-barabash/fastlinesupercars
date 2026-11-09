@@ -5,6 +5,7 @@ import { useProducts } from '../../lib/products.js'
 import { zl } from '../../lib/api.js'
 import GiftVoucher, { TEMPLATE_IDS } from './GiftVoucher.jsx'
 import { useOswald } from './fonts.js'
+import Lights from './Lights.jsx'
 import './swieta.css'
 
 /* /swieta-2026 — świąteczna strona sprzedaży voucherów. Krótka: hero z pętlą wideo,
@@ -43,10 +44,8 @@ export default function Swieta() {
     <div className="xm">
       <section className="xm-hero" ref={heroRef}>
         <div className="xm-hero-bg" aria-hidden="true"><Sparks n={26} /></div>
+        <Lights />
         <div className="wrap xm-hero-in">
-          <motion.p className="xm-eyebrow" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease }}>
-            <span className="xm-dot" />Święta 2026 · voucher prezentowy
-          </motion.p>
           <h1 className="xm-h1">
             {words.map(([w, c], i) => (
               <motion.span key={w} className={c} initial={{ opacity: 0, y: '0.5em', filter: 'blur(10px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ duration: 0.8, delay: 0.12 + i * 0.12, ease }}>
@@ -59,7 +58,7 @@ export default function Swieta() {
             PDF od razu na e-mail — albo wydruk w&nbsp;kopercie prosto do Paczkomatu.
           </motion.p>
           <motion.div className="xm-cta-row" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.62, ease }}>
-            <Link to={GO} className="btn btn-red xm-btn"><GiftIco />Stwórz voucher<span className="xm-arrow">→</span></Link>
+            <Link to={GO} className="btn xm-btn xm-light"><GiftIco />Stwórz voucher<span className="xm-arrow">→</span></Link>
             <span className="xm-meta">{Number.isFinite(from) ? <>od <b>{zl(from)}</b> · </> : null}ważny 12 miesięcy · 5 torów</span>
           </motion.div>
         </div>
@@ -96,7 +95,7 @@ export default function Swieta() {
         </div>
         <div className="xm-reel-cta">
           <h2 className="xm-h2">Prezent, który <span className="xm-red">ma moc</span></h2>
-          <Link to={GO} className="btn btn-red xm-btn"><GiftIco />Stwórz voucher<span className="xm-arrow">→</span></Link>
+          <Link to={GO} className="btn xm-btn xm-light"><GiftIco />Stwórz voucher<span className="xm-arrow">→</span></Link>
         </div>
       </section>
     </div>

@@ -21,6 +21,7 @@ export default function Gifts() {
   const [shipNo, setShipNo] = useState({})
   const [fee, setFee] = useState('')
   const [busy, setBusy] = useState('')
+  const [del, setDel] = useState(null)          // { id, number, code, typed } — potwierdzenie kodem z ekranu
 
   const load = () => adminApi('gifts.list').then((d) => { setData(d); setFee(String(d.inpost / 100)) }).catch((e) => setErr(e.message))
   useEffect(() => { load() }, [])
@@ -63,6 +64,19 @@ export default function Gifts() {
     try { await adminApi('gifts.unship', { id: o.id }); await load() } catch (e) { alert(e.message) }
     setBusy('')
   }
+  // usuwanie tylko po przepisaniu 6-cyfrowego kodu pokazanego na ekranie — żeby nic nie zniknęło przypadkiem
+  const askDelete = (e, o) => {
+    e.stopPropagation()
+    const n = crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000
+    setDel({ id: o.id, number: o.number, code: String(n), typed: '' })
+  }
+  async function doDelete() {
+    if (!del || del.typed !== del.code) return
+    setBusy(del.id)
+    try { await adminApi('gifts.delete', { id: del.id }); setDel(null); await load() } catch (e) { alert(e.message) }
+    setBusy('')
+  }
+
   async function openPdf(e, v) {
     e.stopPropagation()
     const d = await adminApi('voucherPdfUrl', { path: v.pdf_path })
@@ -116,6 +130,24 @@ export default function Gifts() {
         {FILTERS.map(([id, l]) => <button key={id} className={filter === id ? 'is-active' : ''} onClick={() => setFilter(id)}>{l}</button>)}
       </div>
 
+      {del && (
+        <div className="adm-gift-modal" onClick={() => setDel(null)}>
+          <div className="adm-card adm-gift-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="adm-card-title">Usunąć zamówienie #{del.number}?</div>
+            <p className="adm-muted">Zniknie zamówienie, jego voucher (kod przestanie działać) i PDF. Tej operacji nie można cofnąć.</p>
+            <p style={{ margin: '14px 0 6px' }}>Przepisz kod, aby potwierdzić:</p>
+            <div className="adm-gift-code">{del.code}</div>
+            <input autoFocus inputMode="numeric" maxLength={6} value={del.typed} placeholder="000000"
+              onChange={(e) => setDel({ ...del, typed: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+              onKeyDown={(e) => e.key === 'Enter' && doDelete()} className="adm-gift-code-in" />
+            <div className="adm-gift-modal-btns">
+              <button className="adm-btn-sec" onClick={() => setDel(null)}>Anuluj</button>
+              <button className="adm-btn-sec adm-btn-go" disabled={del.typed !== del.code || busy === del.id} onClick={doDelete}>Usuń na zawsze</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!rows.length ? <p className="adm-muted">Brak zamówień.</p> : (
         <div className="adm-table-wrap adm-card">
           <table className="adm-table">
@@ -159,7 +191,9 @@ export default function Gifts() {
                     </td>
                     <td>{zl(o.total)}{o.delivery_fee ? <div className="adm-muted">w tym InPost {zl(o.delivery_fee)}</div> : null}<div className="adm-muted">{o.status === 'paid' ? (o.is_test ? 'test' : 'opłacone') : o.status === 'pending' ? 'czeka na płatność' : o.status}</div></td>
                     <td>{o.voucher ? <><b className="adm-code">{o.voucher.code}</b>{o.voucher.pdf_path && <div><button className="adm-link" onClick={(e) => openPdf(e, o.voucher)}>PDF</button></div>}</> : <span className="adm-muted">—</span>}</td>
-                    <td className="adm-muted">{fmt(o.created_at)}</td>
+                    <td className="adm-muted">{fmt(o.created_at)}
+                      <div><button className="adm-link adm-gift-del" onClick={(e) => askDelete(e, o)}>Usuń</button></div>
+                    </td>
                   </tr>
                 )
               })}
