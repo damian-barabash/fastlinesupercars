@@ -207,6 +207,16 @@ type OrderRow = {
   campaign?: string | null; delivery?: string | null; delivery_fee?: number | null
   delivery_data?: { locker: string; address?: string; phone: string; name?: string } | null
   is_test?: boolean | null
+  // Black Week (migracja 010): kod BLACK = drugi taki sam voucher gratis
+  bonus_code?: string | null; bonus_for?: string | null; bonus_voucher_id?: string | null
+}
+
+/** Black Week: kod „1+1" — nie daje rabatu, tylko drugi taki sam voucher gratis. */
+export const BLACK_CODE = 'BLACK'
+/** Włącznik kodu BLACK — `settings.black_active`, przestawiany w panelu (zakładka Black Week). */
+export async function blackActive() {
+  const r = await db(`settings?key=eq.black_active&select=value`)
+  return r?.[0]?.value === '1'
 }
 
 /** Kampania świąteczna — osobne szablony vouchera (`templates/swieta/<produkt>.jpg`) i świąteczne maile. */
@@ -232,7 +242,8 @@ async function pickTemplate(order: OrderRow, regular: string) {
 export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
   if (order.status === 'paid') {
     const v = order.voucher_id ? (await db(`vouchers?id=eq.${order.voucher_id}&select=code,valid_until`))?.[0] : null
-    return { already: true, code: v?.code as string | undefined, valid_until: v?.valid_until as string | undefined }
+    const b = order.bonus_voucher_id ? (await db(`vouchers?id=eq.${order.bonus_voucher_id}&select=code`))?.[0] : null
+    return { already: true, code: v?.code as string | undefined, valid_until: v?.valid_until as string | undefined, bonus_code: b?.code as string | undefined }
   }
 
   // szablon vouchera = produkt pierwszej pozycji; brak szablonu → domyślny
@@ -241,38 +252,52 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
   const regularTpl = first?.voucher_template || 'templates/alpine-a110.jpg'
   const template = await pickTemplate(order, regularTpl)
   const gift = order.campaign === CAMPAIGN
-  const code = voucherCode()
   const valid = new Date(); valid.setFullYear(valid.getFullYear() + 1)
   const validISO = valid.toISOString().slice(0, 10)
   const validPL = validISO.split('-').reverse().join('.')
   const recipient = order.gift_for || order.customer_name
   const lines = order.items.map((it) => `${it.qty > 1 ? it.qty + '× ' : ''}${it.name}${it.variant ? ' — ' + it.variant : ''}`)
 
-  let pdfPath = '', pdfBytes: Uint8Array | null = null
+  // świąteczny szablon ma ten sam układ co zwykły — bez własnego layoutu bierze layout zwykłego
+  let layout: Partial<Layout> | undefined
   try {
-    // świąteczny szablon ma ten sam układ co zwykły — bez własnego layoutu bierze layout zwykłego
     const tpls = await db(`voucher_templates?path=in.(${[template, regularTpl].map((x) => `"${x}"`).join(',')})&select=path,layout`)
-    const layout = (tpls || []).find((x: { path: string }) => x.path === template)?.layout
+    layout = (tpls || []).find((x: { path: string }) => x.path === template)?.layout
       || (tpls || []).find((x: { path: string }) => x.path === regularTpl)?.layout
-    pdfBytes = await makeVoucherPdf({ template, recipient, lines, validUntil: validPL, code, layout })
-    pdfPath = `pdf/${code}.pdf`
-    await storagePut(pdfPath, pdfBytes, 'application/pdf')
-  } catch (e) {
-    // brak szablonu nie może zablokować płatności — voucher powstaje, PDF dosyłamy ręcznie
-    console.error('pdf fail', e)
+  } catch (e) { console.error('layout fail', e) }
+
+  /** Jeden voucher: kod + PDF w Storage + wiersz w `vouchers`. */
+  const issue = async (forName: string) => {
+    const code = voucherCode()
+    let pdfPath = '', pdfBytes: Uint8Array | null = null
+    try {
+      pdfBytes = await makeVoucherPdf({ template, recipient: forName, lines, validUntil: validPL, code, layout })
+      pdfPath = `pdf/${code}.pdf`
+      await storagePut(pdfPath, pdfBytes, 'application/pdf')
+    } catch (e) {
+      // brak szablonu nie może zablokować płatności — voucher powstaje, PDF dosyłamy ręcznie
+      console.error('pdf fail', e)
+    }
+    const [voucher] = await db('vouchers', {
+      method: 'POST',
+      body: JSON.stringify({
+        code, order_id: order.id, recipient: forName, items_text: lines.join('\n'),
+        template, pdf_path: pdfPath, valid_until: validISO, status: 'active',
+      }),
+    })
+    return { code, pdfPath, pdfBytes, voucher }
   }
 
-  const [voucher] = await db('vouchers', {
-    method: 'POST',
-    body: JSON.stringify({
-      code, order_id: order.id, recipient, items_text: lines.join('\n'),
-      template, pdf_path: pdfPath, valid_until: validISO, status: 'active',
-    }),
-  })
+  const { code, pdfPath, pdfBytes, voucher } = await issue(recipient)
+  // Black Week: drugi taki sam voucher gratis, z własnym imieniem (albo tym samym, gdy nie podano)
+  const bonusFor = (order.bonus_for || '').trim() || recipient
+  const bonus = order.bonus_code ? await issue(bonusFor) : null
+
   await db(`orders?id=eq.${order.id}`, {
     method: 'PATCH',
     body: JSON.stringify({
       status: 'paid', paid_at: new Date().toISOString(), voucher_id: voucher.id,
+      ...(bonus ? { bonus_voucher_id: bonus.voucher.id } : {}),
       ...(paidAmount != null ? { paid_amount: paidAmount } : {}),
     }),
   })
@@ -297,13 +322,17 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
   }
 
   // wiersz na każdy kod; zamówienia sprzed listy `discounts` mają jeden kod w starych kolumnach
-  const discountList = order.discounts?.length ? order.discounts
+  const discountList = order.discounts?.length ? order.discounts.filter((d) => d.kind !== 'black')
     : (order.discount_grosze || 0) > 0 ? [{ kind: order.discount_kind || 'promo', code: order.discount_code || '', discount: order.discount_grosze! }] : []
   const discountRow = discountList.map((d) => `
     <tr>
       <td style="padding:10px 0;color:#7ddc9a;font-size:14px;border-bottom:1px solid #2a2a30">${d.kind === 'voucher' ? 'Voucher' : 'Rabat'} ${esc(d.code)}${d.percent ? ` (−${d.percent}%)` : ''}</td>
       <td style="padding:10px 0;color:#7ddc9a;font-size:14px;border-bottom:1px solid #2a2a30" align="right">−${zl(d.discount)}</td>
-    </tr>`).join('')
+    </tr>`).join('') + (bonus ? `
+    <tr>
+      <td style="padding:10px 0;color:#fff;font-size:14px;border-bottom:1px solid #2a2a30">Drugi voucher dla ${esc(bonusFor)} <span style="color:#8a8a92">· kod ${esc(order.bonus_code!)}</span></td>
+      <td style="padding:10px 0;color:#fff;font-size:14px;font-weight:bold;border-bottom:1px solid #2a2a30" align="right">GRATIS</td>
+    </tr>` : '')
 
   const itemsRows = order.items.map((it) => `
     <tr>
@@ -338,7 +367,14 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
       <div style="color:#8a8a92;font-size:11px;letter-spacing:2px">WYDRUK W KOPERCIE — PACZKOMAT INPOST</div>
       <div style="color:#b9b9c0;font-size:14px;line-height:1.7;margin-top:6px">${lockerLines}</div>
       <div style="color:#8a8a92;font-size:12px;margin-top:6px">Wyślemy go w ciągu 2 dni roboczych — numer przesyłki przyjdzie SMS-em od InPost.</div>
-    </div>` : ''}` : `
+    </div>` : ''}` : bonus ? `
+    <div style="color:#fff;font-size:12px;letter-spacing:3px;font-weight:bold">BLACK WEEK <span style="color:#c8102e">· 1+1</span></div>
+    <h1 style="color:#fff;font-size:24px;margin:10px 0 4px">Dwa vouchery, ${esc(order.customer_name.split(' ')[0])}!</h1>
+    <p style="color:#b9b9c0;font-size:14px;line-height:1.7;margin:12px 0 24px">
+      Twoje zamówienie <b style="color:#fff">#${order.number}</b> zostało opłacone.
+      W załączniku znajdziesz <b style="color:#fff">dwa vouchery PDF</b> — drugi, taki sam,
+      dostajesz gratis z kodem ${esc(order.bonus_code!)}. Każdy ma własny kod i rezerwuje się osobno.
+    </p>` : `
     <div style="color:#c8102e;font-size:12px;letter-spacing:3px;font-weight:bold">POTWIERDZENIE ZAKUPU</div>
     <h1 style="color:#fff;font-size:24px;margin:10px 0 4px">Dziękujemy, ${esc(order.customer_name.split(' ')[0])}!</h1>
     <p style="color:#b9b9c0;font-size:14px;line-height:1.7;margin:12px 0 24px">
@@ -351,10 +387,15 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
       <td style="padding:14px 0;color:#fff;font-size:20px;font-weight:bold" align="right">${zl(order.total)}</td></tr>
     </table>
     <div style="background:#131316;border:1px solid #2a2a30;padding:18px 22px;margin:8px 0 24px">
-      <div style="color:#8a8a92;font-size:11px;letter-spacing:2px">KOD VOUCHERA</div>
+      <div style="color:#8a8a92;font-size:11px;letter-spacing:2px">${bonus ? `VOUCHER 1 — DLA: ${esc(recipient.toUpperCase())}` : 'KOD VOUCHERA'}</div>
       <div style="color:#fff;font-size:26px;font-weight:bold;letter-spacing:4px;margin-top:4px">${code}</div>
       <div style="color:#8a8a92;font-size:12px;margin-top:6px">Ważny do: <span style="color:#fff">${validPL}</span></div>
     </div>
+    ${bonus ? `<div style="background:#000;border:1px solid #c8102e;padding:18px 22px;margin:-12px 0 24px">
+      <div style="color:#c8102e;font-size:11px;letter-spacing:2px;font-weight:bold">VOUCHER 2 GRATIS — DLA: ${esc(bonusFor.toUpperCase())}</div>
+      <div style="color:#fff;font-size:26px;font-weight:bold;letter-spacing:4px;margin-top:4px">${bonus.code}</div>
+      <div style="color:#8a8a92;font-size:12px;margin-top:6px">Ważny do: <span style="color:#fff">${validPL}</span></div>
+    </div>` : ''}
     ${inv ? `<div style="border-left:3px solid #c8102e;padding:4px 0 4px 16px;margin:0 0 24px">
       <div style="color:#8a8a92;font-size:11px;letter-spacing:2px">FAKTURA VAT NA DANE</div>
       <div style="color:#fff;font-size:14px;line-height:1.7;margin-top:6px">${invoiceLines}</div>
@@ -364,17 +405,23 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
     <a href="${SITE}/kalendarz" style="display:inline-block;background:#c8102e;color:#fff;text-decoration:none;font-weight:bold;letter-spacing:2px;font-size:14px;padding:14px 34px">ZAREZERWUJ TERMIN</a>
   `)
 
-  const attachments = pdfBytes ? [{ filename: `Voucher-${code}.pdf`, content: b64(pdfBytes) }] : undefined
+  const atts = [
+    ...(pdfBytes ? [{ filename: `Voucher-${code}.pdf`, content: b64(pdfBytes) }] : []),
+    ...(bonus?.pdfBytes ? [{ filename: `Voucher-GRATIS-${bonus.code}.pdf`, content: b64(bonus.pdfBytes) }] : []),
+  ]
+  const attachments = atts.length ? atts : undefined
+  const pdfMissing = !pdfPath || (!!bonus && !bonus.pdfPath)
   const subject = gift
     ? `${order.is_test ? '[TEST] ' : ''}Voucher świąteczny dla ${recipient} — ${code}`
+    : bonus ? `Vouchery ${code} + ${bonus.code} (1+1) — potwierdzenie zakupu #${order.number}`
     : `Voucher ${code} — potwierdzenie zakupu #${order.number}`
   const sent = await sendMail(order.customer_email, subject, html, attachments)
 
   // tryb testowy strony świątecznej: mail tylko do kupującego, biuro nic nie dostaje
-  if (order.is_test) return { already: false, code, valid_until: validISO, mail_sent: sent.ok, pdf: !!pdfPath }
+  if (order.is_test) return { already: false, code, bonus_code: bonus?.code, valid_until: validISO, mail_sent: sent.ok, pdf: !pdfMissing }
 
   // kopia dla biura — każde opłacone zamówienie ląduje w skrzynce rezerwacji
-  await sendMail(CONTACT_TO, `${dd ? 'DO WYSŁANIA — INPOST — ' : ''}${gift ? 'Voucher świąteczny' : 'Nowe zamówienie'} #${order.number} — ${order.customer_name} (${zl(order.total)})${inv ? ' — FAKTURA' : ''}`, mailShell(`
+  await sendMail(CONTACT_TO, `${dd ? 'DO WYSŁANIA — INPOST — ' : ''}${gift ? 'Voucher świąteczny' : 'Nowe zamówienie'} #${order.number} — ${order.customer_name} (${zl(order.total)})${bonus ? ' — BLACK 1+1' : ''}${inv ? ' — FAKTURA' : ''}`, mailShell(`
     ${dd ? `<div style="background:#131316;border:1px solid #d4a017;padding:16px 20px;margin:0 0 18px">
       <div style="color:#d4a017;font-size:11px;letter-spacing:2px;font-weight:bold">DO WYSŁANIA — WYDRUK DO PACZKOMATU</div>
       <div style="color:#b9b9c0;font-size:14px;line-height:1.7;margin-top:6px">${lockerLines}</div>
@@ -386,6 +433,7 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
       Klient: <b style="color:#fff">${esc(order.customer_name)}</b><br>
       E-mail: ${esc(order.customer_email)}${order.customer_phone ? `<br>Tel: ${esc(order.customer_phone)}` : ''}
       ${order.gift_for ? `<br>Voucher dla: <b style="color:#fff">${esc(order.gift_for)}</b>` : ''}
+      ${bonus ? `<br>Drugi voucher (gratis, kod ${esc(order.bonus_code!)}) dla: <b style="color:#fff">${esc(bonusFor)}</b>` : ''}
       ${order.notes ? `<br>${esc(order.notes)}` : ''}
     </p>
     ${inv ? `<div style="background:#131316;border:1px solid #c8102e;padding:16px 20px;margin:4px 0 18px">
@@ -393,10 +441,10 @@ export async function fulfillOrder(order: OrderRow, paidAmount?: number) {
       <div style="color:#fff;font-size:14px;line-height:1.7;margin-top:6px">${invoiceLines}</div>
     </div>` : ''}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsRows}${discountRow}</table>
-    <div style="color:#8a8a92;font-size:13px;margin-top:18px">Kod vouchera: <b style="color:#fff">${code}</b> · ważny do ${validPL}</div>
-    ${pdfPath ? '' : '<div style="color:#ff6b6b;font-size:13px;margin-top:10px">UWAGA: nie udało się wygenerować PDF (brak szablonu?) — wyślij voucher ręcznie.</div>'}
+    <div style="color:#8a8a92;font-size:13px;margin-top:18px">Kod vouchera: <b style="color:#fff">${code}</b>${bonus ? ` · gratis: <b style="color:#fff">${bonus.code}</b>` : ''} · ważny do ${validPL}</div>
+    ${!pdfMissing ? '' : '<div style="color:#ff6b6b;font-size:13px;margin-top:10px">UWAGA: nie udało się wygenerować PDF (brak szablonu?) — wyślij voucher ręcznie.</div>'}
     ${sent.ok ? '' : '<div style="color:#ff6b6b;font-size:13px;margin-top:10px">UWAGA: e-mail do klienta nie został wysłany!</div>'}
   `), attachments)
 
-  return { already: false, code, valid_until: validISO, mail_sent: sent.ok, pdf: !!pdfPath }
+  return { already: false, code, bonus_code: bonus?.code, valid_until: validISO, mail_sent: sent.ok, pdf: !pdfMissing }
 }

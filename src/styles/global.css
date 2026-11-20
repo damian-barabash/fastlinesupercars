@@ -134,3 +134,29 @@ h1, h2, h3, h4, .display {
   .marquee-inner { animation: none; }
 }
 .xm-loading { min-height: 100vh; background: #0a0a0c; }
+
+/* ---------- Black Week: ciemny motyw (kod BLACK w koszyku → klasa `bw` na <html>) ---------- */
+html.bw {
+  --bg: #070708;
+  --panel: #131316;
+  --ink: #f4f4f6;
+  --gray: #a2a2ac;
+  --gray-light: #6f6f79;
+  --line: #2a2a31;
+  --shadow: 0 2px 18px rgba(0, 0, 0, .7);
+  --shadow-lg: 0 16px 44px rgba(0, 0, 0, .8);
+  color-scheme: dark;
+}
+html.bw .field input, html.bw .field textarea, html.bw .field select { background: #0b0b0d; }
+html.bw .ghost-num { -webkit-text-stroke-color: #33333b; }
+/* zmiana motywu rozlewa się kołem od pola z kodem (współrzędne ustawia koszyk) */
+html.bw-vt::view-transition-old(root) { animation: none; mix-blend-mode: normal; z-index: 1; }
+html.bw-vt::view-transition-new(root) { animation: bwReveal .95s cubic-bezier(.65, 0, .2, 1) both; mix-blend-mode: normal; z-index: 2; }
+@keyframes bwReveal {
+  from { clip-path: circle(0 at var(--bw-x, 50%) var(--bw-y, 50%)); }
+  to { clip-path: circle(150vmax at var(--bw-x, 50%) var(--bw-y, 50%)); }
+}
+/* przeglądarki bez View Transitions: kolory płynnie przechodzą */
+html.bw-fade body, html.bw-fade main, html.bw-fade main * {
+  transition: background-color .6s ease, color .6s ease, border-color .6s ease, box-shadow .6s ease !important;
+}

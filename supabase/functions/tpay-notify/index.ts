@@ -56,6 +56,9 @@ Deno.serve(async (req) => {
     await db(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'chargeback' }) })
     if (order.voucher_id)
       await db(`vouchers?id=eq.${order.voucher_id}`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) })
+    // Black Week: gratisowy voucher z tego samego zamówienia też traci ważność
+    if (order.bonus_voucher_id)
+      await db(`vouchers?id=eq.${order.bonus_voucher_id}`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) })
     // bonu użytego przy tym zamówieniu NIE przywracamy — o zwrocie decyduje biuro (widać go przy zamówieniu)
     if (order.discount_kind === 'voucher') console.warn(`tpay-notify: chargeback z bonem ${order.discount_code} (#${order.number})`)
     console.warn(`tpay-notify: chargeback zamówienia #${order.number}`)

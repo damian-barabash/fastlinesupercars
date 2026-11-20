@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { getCart, updateQty, removeFromCart, clearCart, cartTotal } from '../lib/cart.js'
@@ -40,6 +41,28 @@ function nipValid(nip) {
   const sum = [6, 5, 7, 2, 3, 4, 5, 6, 7].reduce((s, k, i) => s + k * Number(nip[i]), 0) % 11
   return sum !== 10 && sum === Number(nip[9])
 }
+// Black Week: kod BLACK przełącza stronę w ciemny motyw (klasa `bw` na <html>).
+// Zmiana rozlewa się kołem od pola z kodem (View Transitions); bez wsparcia — zwykłe przejście kolorów.
+const hasBlack = (list) => (list || []).some((c) => c.kind === 'black')
+function setBlackTheme(on, origin, commit) {
+  const root = document.documentElement
+  const apply = () => { commit?.(); root.classList.toggle('bw', on) }
+  const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  if (calm || root.classList.contains('bw') === on) { apply(); return }
+  if (!document.startViewTransition) {
+    // bez View Transitions: kolory po prostu płynnie przechodzą
+    root.classList.add('bw-fade'); apply()
+    setTimeout(() => root.classList.remove('bw-fade'), 800)
+    return
+  }
+  const r = origin?.getBoundingClientRect()
+  root.style.setProperty('--bw-x', `${r ? r.left + r.width / 2 : window.innerWidth / 2}px`)
+  root.style.setProperty('--bw-y', `${r ? r.top + r.height / 2 : window.innerHeight / 2}px`)
+  root.classList.add('bw-vt')
+  const t = document.startViewTransition(apply)
+  t.finished.finally(() => root.classList.remove('bw-vt'))
+}
+
 const fmtNip = (nip) => `${nip.slice(0, 3)}-${nip.slice(3, 6)}-${nip.slice(6, 8)}-${nip.slice(8)}`
 
 export default function Koszyk() {
@@ -55,7 +78,8 @@ export default function Koszyk() {
   const [err, setErr] = useState('')
   const [promo, setPromo] = useState('')
   // zastosowane kody, rabaty się sumują: [{kind:'promo'|'voucher', code, discount, percent?, amount?}]
-  const [codes, setCodes] = useState([])
+  const [codes, setCodesRaw] = useState([])
+  const [bonusFor, setBonusFor] = useState('')       // Black Week: dla kogo drugi (gratisowy) voucher
   const [promoErr, setPromoErr] = useState('')
   const [promoBusy, setPromoBusy] = useState(false)
   const [payBusy, setPayBusy] = useState(false)
@@ -63,6 +87,15 @@ export default function Koszyk() {
   const [fly, setFly] = useState(null)
   const promoRef = useRef(null)
   const totalRef = useRef(null)
+
+  // Każda zmiana listy kodów idzie tędy: gdy BLACK pojawia się albo znika, strona zmienia motyw
+  // razem z treścią w jednym przejściu (flushSync — żeby „nowy" widok miał już baner 1+1).
+  function setCodes(next) {
+    if (hasBlack(next) === document.documentElement.classList.contains('bw')) { setCodesRaw(next); return }
+    setBlackTheme(hasBlack(next), promoRef.current, () => flushSync(() => setCodesRaw(next)))
+  }
+  // wyjście z koszyka zdejmuje ciemny motyw z reszty strony
+  useEffect(() => () => document.documentElement.classList.remove('bw', 'bw-vt', 'bw-fade'), [])
 
   useEffect(() => {
     const fn = () => setItems(getCart())
@@ -124,6 +157,7 @@ export default function Koszyk() {
       const ie = invoiceError()
       if (ie) { setErr(ie); setStep(1); return }
     }
+    if (n >= 3 && black && bonusFor.trim().length < 2) { setErr('Wpisz, dla kogo ma być drugi, gratisowy voucher'); setStep(2); return }
     if (n >= 3 && !form.terms) { setErr('Zaakceptuj regulamin płatności'); setStep(2); return }
     setStep(n)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -199,8 +233,10 @@ export default function Koszyk() {
   const discount = Math.min(discountSum, total)
   const grandTotal = total - discount
   const shownTotal = useCountTo(grandTotal)
-  const codeLabel = (c) => c.kind === 'voucher' ? `Voucher ${c.code}` : `Rabat ${c.code}${c.percent ? ` (−${c.percent}%)` : ''}`
-  const onlyVouchers = codes.length > 0 && codes.every((c) => c.kind === 'voucher')
+  const black = codes.find((c) => c.kind === 'black')   // kod „1+1": rabat 0 zł, drugi voucher gratis
+  const firstFor = (form.gift && form.gift_for.trim()) || form.name.trim()
+  const codeLabel = (c) => c.kind === 'black' ? `${c.code} — drugi voucher gratis` : c.kind === 'voucher' ? `Voucher ${c.code}` : `Rabat ${c.code}${c.percent ? ` (−${c.percent}%)` : ''}`
+  const onlyVouchers = codes.some((c) => c.kind === 'voucher') && codes.every((c) => c.kind !== 'promo')
   // kody pokryły całe zamówienie — nie ma czego wysyłać do bramki
   const fullyCovered = discount > 0 && grandTotal === 0
 
@@ -219,6 +255,7 @@ export default function Koszyk() {
         invoice: wantInvoice ? { ...inv, nip: nipDigits } : null,
         items: items.map((i) => ({ product_id: i.product_id, variant: i.variant, qty: i.qty, ...(i.amount != null ? { amount: i.amount } : {}) })),
         ...(codes.length ? { codes: codes.map((c) => c.code) } : {}),
+        ...(black ? { bonus_for: bonusFor.trim() } : {}),
         return_origin: window.location.origin,   // serwer i tak przyjmie tylko adres z białej listy
       })
       clearCart()
@@ -243,7 +280,7 @@ export default function Koszyk() {
   }
 
   return (
-    <main className="section koszyk">
+    <main className={`section koszyk ${black ? 'is-black' : ''}`}>
       <div className="wrap">
         {/* stepper */}
         <Reveal>
@@ -354,7 +391,7 @@ export default function Koszyk() {
                     </div>
                   ))}
                   <AnimatePresence initial={false}>
-                    {codes.map((c) => (
+                    {codes.filter((c) => c.kind !== 'black').map((c) => (
                       <motion.div
                         key={c.code}
                         className="koszyk-sum-row koszyk-sum-discount"
@@ -363,6 +400,16 @@ export default function Koszyk() {
                         <span>{codeLabel(c)}</span><b>−{zl(c.discount)}</b>
                       </motion.div>
                     ))}
+                  </AnimatePresence>
+                  <AnimatePresence initial={false}>
+                    {black && (
+                      <motion.div
+                        key="bw" className="koszyk-sum-row koszyk-sum-bonus"
+                        initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                      >
+                        <span>Drugi taki sam voucher · kod {black.code}</span><b>GRATIS</b>
+                      </motion.div>
+                    )}
                   </AnimatePresence>
                   <div className="koszyk-sum-row koszyk-sum-total">
                     <span>Razem</span>
@@ -389,10 +436,10 @@ export default function Koszyk() {
                   <ul className="koszyk-codes">
                     <AnimatePresence initial={false}>
                       {codes.map((c) => (
-                        <motion.li key={c.code} layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}>
+                        <motion.li key={c.code} layout className={c.kind === 'black' ? 'is-black' : ''} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}>
                           <span className="koszyk-code-name">✓ {c.code}</span>
                           <span className="koszyk-code-info">
-                            {c.kind === 'voucher' ? `voucher ${zl(c.amount)}` : `−${c.percent}%`} · −{zl(c.discount)}
+                            {c.kind === 'black' ? '1+1 · drugi voucher gratis' : <>{c.kind === 'voucher' ? `voucher ${zl(c.amount)}` : `−${c.percent}%`} · −{zl(c.discount)}</>}
                           </span>
                           <button type="button" onClick={() => removeCode(c.code)} aria-label={`Usuń kod ${c.code}`} disabled={promoBusy || !!pending}>✕</button>
                           {c.kind === 'voucher' && c.amount > c.discount && (
@@ -409,6 +456,39 @@ export default function Koszyk() {
                       ? '✓ Kody pokrywają całe zamówienie'
                       : <>✓ {codes.length > 1 ? `Rabaty sumują się — oszczędzasz ${zl(discount)}` : `Oszczędzasz ${zl(discount)}`}, do zapłaty {zl(grandTotal)}</>}
                   </p>
+                )}
+                {black && (
+                  <motion.section
+                    className="koszyk-bw"
+                    initial={{ opacity: 0, y: 26 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.35, ease: [0.22, 0.8, 0.3, 1] }}
+                  >
+                    <div className="koszyk-bw-cards" aria-hidden="true">
+                      <motion.div className="koszyk-bw-card is-free"
+                        initial={{ x: 0, y: 0, rotate: -4, opacity: 0 }} animate={{ x: '36%', y: '-26%', rotate: 7, opacity: 1 }}
+                        transition={{ type: 'spring', stiffness: 120, damping: 14, delay: 0.75 }}>
+                        {rows[0]?.p?.cover && <img src={rows[0].p.cover} alt="" />}
+                        <span>Gratis</span>
+                      </motion.div>
+                      <div className="koszyk-bw-card">
+                        {rows[0]?.p?.cover && <img src={rows[0].p.cover} alt="" />}
+                      </div>
+                    </div>
+                    <div className="koszyk-bw-body">
+                      <h3 className="koszyk-bw-title"><span className="koszyk-bw-11">1+1</span> Drugi voucher gratis</h3>
+                      <p>
+                        Kod {black.code} działa: do tego zamówienia dokładamy drugi, taki sam voucher —
+                        z własnym kodem i osobną rezerwacją terminu. Płacisz tylko za jeden.
+                      </p>
+                      <div className="field">
+                        <label htmlFor="bw-for">Dla kogo drugi voucher? *</label>
+                        <input id="bw-for" value={bonusFor} maxLength={60}
+                          onChange={(e) => { setBonusFor(e.target.value); setErr('') }}
+                          placeholder="np. Ani Kowalskiej" autoComplete="off" />
+                      </div>
+                      <p className="koszyk-bw-note">Imię pojawi się na drugim voucherze. Oba PDF-y wyślemy na {form.email || 'Twój e-mail'}.</p>
+                    </div>
+                  </motion.section>
                 )}
                 <AnimatePresence>
                   {fly && (
@@ -428,8 +508,9 @@ export default function Koszyk() {
                 <div className="koszyk-sum-meta">
                   <p><b>{form.name}</b> · {form.email}{form.phone ? ` · ${form.phone}` : ''}</p>
                   {form.gift && form.gift_for && <p>Voucher dla: <b>{form.gift_for}</b></p>}
+                  {black && bonusFor.trim() && <p>Drugi voucher (gratis) dla: <b>{bonusFor.trim()}</b></p>}
                   {wantInvoice && <p>Faktura VAT: <b>{inv.company}</b> · NIP {fmtNip(nipDigits)} · {inv.street}, {inv.postal} {inv.city}</p>}
-                  <p className="muted">Voucher PDF (ważny 1 rok) wyślemy na e-mail od razu po opłaceniu.</p>
+                  <p className="muted">{black ? 'Dwa vouchery PDF (ważne 1 rok) wyślemy' : 'Voucher PDF (ważny 1 rok) wyślemy'} na e-mail od razu po opłaceniu.</p>
                 </div>
                 <label className="koszyk-check">
                   <input type="checkbox" checked={form.terms} onChange={set('terms')} />
@@ -452,20 +533,25 @@ export default function Koszyk() {
                     <span className="koszyk-pay-radio" />
                     <div>
                       <b>{fullyCovered ? (onlyVouchers ? 'Opłacone voucherem' : 'Opłacone kodami') : 'Płatność online'}</b>
-                      <p className="muted">{fullyCovered ? `${codes.map((c) => c.code).join(' + ')} — pokrywa całe zamówienie` : 'BLIK, karta, szybki przelew — Tpay'}</p>
+                      <p className="muted">{fullyCovered ? `${codes.filter((c) => c.kind !== 'black').map((c) => c.code).join(' + ')} — pokrywa całe zamówienie` : 'BLIK, karta, szybki przelew — Tpay'}</p>
                     </div>
                     <span className="koszyk-pay-total">{zl(grandTotal)}</span>
                   </div>
                 </div>
+                {black && (
+                  <p className="koszyk-promo-ok" style={{ marginBottom: 12 }}>
+                    ✓ Kod {black.code}: dwa vouchery w cenie jednego — dla {firstFor} i dla {bonusFor.trim()}
+                  </p>
+                )}
                 {discount > 0 && (
                   <p className="koszyk-promo-ok" style={{ marginBottom: 12 }}>
-                    ✓ {codes.map(codeLabel).join(' + ')} — taniej o {zl(discount)}
+                    ✓ {codes.filter((c) => c.kind !== 'black').map(codeLabel).join(' + ')} — taniej o {zl(discount)}
                   </p>
                 )}
                 <p className="muted" style={{ fontSize: 13 }}>
                   {fullyCovered
-                    ? 'Nie musisz nic dopłacać. Po potwierdzeniu zamówienia voucher PDF wyślemy na Twój e-mail.'
-                    : 'Po kliknięciu „Zapłać" przeniesiemy Cię do bezpiecznej bramki Tpay. Voucher PDF wyślemy na e-mail od razu po zaksięgowaniu płatności.'}
+                    ? `Nie musisz nic dopłacać. Po potwierdzeniu zamówienia ${black ? 'oba vouchery' : 'voucher'} PDF wyślemy na Twój e-mail.`
+                    : `Po kliknięciu „Zapłać" przeniesiemy Cię do bezpiecznej bramki Tpay. ${black ? 'Oba vouchery' : 'Voucher'} PDF wyślemy na e-mail od razu po zaksięgowaniu płatności.`}
                 </p>
                 {err && <p className="koszyk-err">{err}</p>}
                 <div className="koszyk-actions">

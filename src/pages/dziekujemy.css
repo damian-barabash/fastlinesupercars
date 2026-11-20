@@ -32,3 +32,13 @@
 
 .dz-next { margin-top: 56px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .dz-ctas { display: flex; gap: 16px; margin-top: 18px; flex-wrap: wrap; justify-content: center; }
+
+/* Black Week: dwa vouchery (kupiony + gratis) */
+.dz-vouchers { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; }
+.dz-vouchers .dz-voucher { padding: 28px 40px; }
+.dz-voucher-free.is-ready { border-color: rgba(225, 6, 0, .9); box-shadow: 0 0 70px rgba(225, 6, 0, .3); }
+.dz-voucher-label i {
+  background: var(--red); color: #fff; font-style: italic; letter-spacing: .12em; padding: 2px 8px; margin-right: 8px;
+}
+html.bw .dz-voucher-label { color: #a2a2ac; }
+@media (max-width: 560px) { .dz-vouchers .dz-voucher { padding: 24px 26px; width: 100%; } }

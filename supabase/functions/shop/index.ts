@@ -20,7 +20,7 @@
 //     odejmują się po kodach procentowych, każdy do wysokości tego, co zostało do zapłaty.
 //     Bon jest rezerwowany przy zakładaniu zamówienia i wypalany dopiero po potwierdzonej
 //     płatności; gdy kody pokrywają całość, zamówienie realizuje się od razu, bez bramki.
-import { CORS, J, db, esc, rpc, SITE, SB_URL, CONTACT_TO, sendMail, mailShell, fulfillOrder, zl, CAMPAIGN } from '../_shared/core.ts'
+import { CORS, J, db, esc, rpc, SITE, SB_URL, CONTACT_TO, sendMail, mailShell, fulfillOrder, zl, CAMPAIGN, BLACK_CODE, blackActive } from '../_shared/core.ts'
 import { tpayConfigured, tpayCreateTransaction } from '../_shared/tpay.ts'
 
 const TEST_PAYMENTS = Deno.env.get('SHOP_TEST_PAYMENTS') === '1'
@@ -34,6 +34,7 @@ type Delivery = { locker?: string; address?: string; phone?: string; name?: stri
 type CheckoutBody = {
   customer: Customer; gift_for?: string; invoice?: Invoice | null; items: Item[]; codes?: string[]; promo?: string; return_origin?: string
   campaign?: string; delivery?: string; delivery_data?: Delivery | null
+  bonus_for?: string   // Black Week: dla kogo drugi (gratisowy) voucher
 }
 
 // ---------- strona świąteczna ----------
@@ -176,7 +177,8 @@ async function getPromo(raw?: string) {
   return { code: r.code as string, percent: +r.percent, min: +(r.min_grosze || 0) }
 }
 
-type Applied = { kind: 'promo' | 'voucher'; code: string; percent?: number; amount?: number; discount: number }
+// `black` — kod Black Week „1+1": rabat 0 zł, za to drugi taki sam voucher gratis
+type Applied = { kind: 'promo' | 'voucher' | 'black'; code: string; percent?: number; amount?: number; discount: number }
 type CodeError = { code: string; error: string; unknown?: boolean }
 
 /**
@@ -186,6 +188,11 @@ type CodeError = { code: string; error: string; unknown?: boolean }
 async function lookupCode(raw: string | undefined, subtotal: number): Promise<{ applied?: Applied; error?: string; unknown?: boolean }> {
   const code = normCode(raw)
   if (!code || !CODE_RE.test(code)) return { error: 'Nieprawidłowy kod rabatowy', unknown: true }
+
+  if (code === BLACK_CODE) {
+    if (!(await blackActive())) return { error: `Kod ${BLACK_CODE} nie jest teraz aktywny` }
+    return { applied: { kind: 'black', code, discount: 0 } }
+  }
 
   const promo = await getPromo(code)
   if (promo) {
@@ -237,8 +244,12 @@ async function resolveCodes(raws: string[], subtotal: number): Promise<{ applied
   }
 
   // procenty najpierw (od sumy koszyka), potem bony — kolejność wpisania zachowana w każdej grupie
-  const ordered = [...found.filter((a) => a.kind === 'promo'), ...found.filter((a) => a.kind === 'voucher')]
-  const applied: Applied[] = []
+  // BLACK (1+1) nie łączy się z kodami procentowymi — bony kwotowe to pieniądze klienta, więc zostają
+  const black = found.find((a) => a.kind === 'black')
+  if (black) for (const a of found.filter((a) => a.kind === 'promo'))
+    errors.push({ code: a.code, error: `Kod ${a.code} nie łączy się z kodem ${black.code} (drugi voucher gratis)` })
+  const ordered = [...(black ? [] : found.filter((a) => a.kind === 'promo')), ...found.filter((a) => a.kind === 'voucher')]
+  const applied: Applied[] = black ? [black] : []
   let left = subtotal
   for (const a of ordered) {
     const want = a.kind === 'promo' ? Math.round(subtotal * a.percent! / 100) : a.amount!
@@ -260,7 +271,10 @@ function discountCols(applied: Applied[]) {
     // 'voucher', gdy jest choć jeden bon — od tego zależy wypalanie i zwalnianie rezerwacji
     discount_kind: !applied.length ? null : applied.some((a) => a.kind === 'voucher') ? 'voucher' : 'promo',
     // `notes` zostaje w dawnym formacie — na nim opiera się licznik użyć kodów w panelu
-    notes: applied.map((a) => `promo:${a.code} -${(a.discount / 100).toFixed(2)} zł`).join('; '),
+    notes: [
+      ...applied.filter((a) => a.kind !== 'black').map((a) => `promo:${a.code} -${(a.discount / 100).toFixed(2)} zł`),
+      ...applied.filter((a) => a.kind === 'black').map((a) => `${a.code}: drugi voucher gratis`),
+    ].join('; '),
   }
 }
 
@@ -358,6 +372,13 @@ async function checkout(body: CheckoutBody) {
   if (gift.error) return J({ error: gift.error }, 400)
   const fee = gift.fee || 0
 
+  // Black Week: kod BLACK = drugi taki sam voucher gratis (osobne imię na PDF)
+  const black = built.applied!.find((a) => a.kind === 'black')
+  if (black && gift.cols) return J({ error: `Kod ${black.code} działa w koszyku sklepu — tutaj go usuń`, code: black.code }, 400)
+  const bonusCols = black
+    ? { bonus_code: black.code, bonus_for: String(body.bonus_for || '').trim().replace(/\s+/g, ' ').slice(0, 60) || null }
+    : {}
+
   if (gift.test) {
     // W teście bon kwotowy spaliłby się naprawdę — prawdziwe pieniądze klienta. Kody procentowe działają.
     if (built.applied!.some((a) => a.kind === 'voucher'))
@@ -384,7 +405,7 @@ async function checkout(body: CheckoutBody) {
       invoice: parseInvoice(body.invoice).invoice,
       items: built.lines, total, status: 'pending',
       subtotal_grosze: built.subtotal, ...discountCols(applied),
-      ...(gift.cols || {}),
+      ...(gift.cols || {}), ...bonusCols,
     }),
   })
 
@@ -407,7 +428,7 @@ async function checkout(body: CheckoutBody) {
   if (hasVoucher) {
     const promoSum = applied.filter((a) => a.kind === 'promo').reduce((s, a) => s + a.discount, 0)
     let left = built.subtotal! - promoSum
-    const real: Applied[] = applied.filter((a) => a.kind === 'promo')
+    const real: Applied[] = applied.filter((a) => a.kind !== 'voucher')
     for (const a of applied.filter((a) => a.kind === 'voucher')) {
       const res = await rpc('voucher_reserve', { p_code: a.code, p_order: order.id, p_subtotal: left })
       if (!res.ok) {
@@ -438,7 +459,7 @@ async function checkout(body: CheckoutBody) {
       await db(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ payment_method: 'voucher' }) })
       const res = await fulfillOrder({ ...order, total, ...discountCols(applied) }, 0)
       console.log(`checkout: #${order.number} opłacone kodami ${applied.map((a) => a.code).join(', ')} → ${res.code}`)
-      return J({ order_id: order.id, number: order.number, total: 0, paid: true, voucher_code: res.code })
+      return J({ order_id: order.id, number: order.number, total: 0, paid: true, voucher_code: res.code, bonus_voucher_code: res.bonus_code })
     } catch (e) {
       console.error('checkout: realizacja zamówienia na 0 zł', e)
       await rpc('voucher_release', { p_order: order.id })   // kod ma wrócić do obiegu
@@ -531,10 +552,13 @@ async function payTest(body: { order_id: string }) {
 /** Status zamówienia — używane przez stronę „Dziękujemy" (id zamówienia = UUID, nie do zgadnięcia). */
 async function getOrder(body: { order_id: string }) {
   if (!/^[0-9a-f-]{36}$/i.test(body.order_id || '')) return J({ error: 'not found' }, 404)
-  const o = (await db(`orders?id=eq.${body.order_id}&select=id,number,status,total,items,customer_name,customer_email,voucher_id,payment_url,discount_grosze,discount_code,discount_kind,discounts`))?.[0]
+  const o = (await db(`orders?id=eq.${body.order_id}&select=id,number,status,total,items,customer_name,customer_email,gift_for,voucher_id,bonus_code,bonus_for,bonus_voucher_id,payment_url,discount_grosze,discount_code,discount_kind,discounts`))?.[0]
   if (!o) return J({ error: 'not found' }, 404)
   let voucher = null
-  if (o.voucher_id) voucher = (await db(`vouchers?id=eq.${o.voucher_id}&select=code,valid_until,status`))?.[0]
+  if (o.voucher_id) voucher = (await db(`vouchers?id=eq.${o.voucher_id}&select=code,valid_until,status,recipient`))?.[0]
+  // Black Week: drugi (gratisowy) voucher
+  let bonusVoucher = null
+  if (o.bonus_voucher_id) bonusVoucher = (await db(`vouchers?id=eq.${o.bonus_voucher_id}&select=code,valid_until,status,recipient`))?.[0]
   return J({
     id: o.id, number: o.number, status: o.status, total: o.total, items: o.items,
     customer_name: o.customer_name, customer_email: o.customer_email,
@@ -542,6 +566,7 @@ async function getOrder(body: { order_id: string }) {
     discounts: o.discounts || [],
     payment_url: o.status === 'pending' ? o.payment_url : null,
     voucher,
+    bonus: o.bonus_code ? { code: o.bonus_code, for: o.bonus_for || o.gift_for || o.customer_name, voucher: bonusVoucher } : null,
   })
 }
 

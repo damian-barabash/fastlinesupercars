@@ -151,3 +151,62 @@
 .koszyk-side-total { font-family: var(--display); font-size: 34px; margin: 8px 0 16px; color: #fff; }
 .koszyk-side .produkt-usp li { color: #c3c3cb; }
 .koszyk-side .produkt-usp li b { color: #fff; }
+
+/* ---------- Black Week: kod BLACK = drugi voucher gratis, koszyk w ciemnym motywie ---------- */
+html.bw .koszyk-form, html.bw .koszyk-summary, html.bw .koszyk-pay { background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--shadow); }
+html.bw .stepper-num, html.bw .koszyk-item-qty button { background: var(--panel); }
+html.bw .koszyk-sum-box { border-color: rgba(225, 6, 0, .45); box-shadow: 0 0 46px rgba(225, 6, 0, .14); }
+html.bw .koszyk-pay-box { background: transparent; }
+html.bw .koszyk-pay-method.is-active { background: rgba(225, 6, 0, .1); }
+html.bw .koszyk-codes li { background: rgba(74, 222, 128, .07); border-color: rgba(74, 222, 128, .3); }
+html.bw .koszyk-code-name { color: #4ade80; }
+html.bw .koszyk-code-info { color: #c5cdc8; }
+html.bw .koszyk-codes button, html.bw .koszyk-codes small { color: var(--gray); }
+html.bw .koszyk-promo-ok, html.bw .koszyk-invoice-msg.is-ok { color: #4ade80; }
+html.bw .koszyk-err { color: #ff5a4d; }
+html.bw .koszyk-codes li.is-black { background: #000; border-color: rgba(225, 6, 0, .6); }
+html.bw .koszyk-codes li.is-black .koszyk-code-name { color: #fff; }
+html.bw .koszyk-codes li.is-black .koszyk-code-info { color: #ff5a4d; font-weight: 600; }
+
+.koszyk-sum-bonus b {
+  background: var(--red); color: #fff; font-family: var(--label); font-style: italic; font-size: 12.5px;
+  letter-spacing: .1em; padding: 3px 12px; align-self: center;
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+}
+
+.koszyk-bw {
+  display: grid; grid-template-columns: 230px 1fr; gap: 34px; align-items: center;
+  margin-top: 26px; padding: 30px 32px; color: #fff; position: relative; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 0% 100%, rgba(225, 6, 0, .34), transparent 60%),
+    radial-gradient(80% 70% at 100% 0%, rgba(225, 6, 0, .16), transparent 65%),
+    #000;
+  box-shadow: inset 0 0 0 1px rgba(225, 6, 0, .5);
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%);
+}
+.koszyk-bw-cards { position: relative; width: 160px; aspect-ratio: 4 / 3; margin: 38px 0 6px 6px; }
+.koszyk-bw-card {
+  position: absolute; inset: 0; background: #17171b; overflow: hidden; transform: rotate(-4deg);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .7), inset 0 0 0 1px rgba(255, 255, 255, .14);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+}
+.koszyk-bw-card img { width: 100%; height: 100%; object-fit: cover; }
+.koszyk-bw-card.is-free img { filter: saturate(.85) brightness(.8); }
+.koszyk-bw-card.is-free span {
+  position: absolute; right: 14px; top: 0; background: var(--red); color: #fff;
+  font-family: var(--label); font-weight: 700; font-style: italic; font-size: 11px; letter-spacing: .12em;
+  text-transform: uppercase; padding: 3px 10px;
+}
+.koszyk-bw-title { font-size: clamp(22px, 2.6vw, 30px); display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 14px; }
+.koszyk-bw-11 { color: #ff2a1f; font-size: 1.7em; line-height: 1; text-shadow: 0 0 22px rgba(225, 6, 0, .85), 0 0 60px rgba(225, 6, 0, .5); }
+.koszyk-bw-body > p { color: #c3c3cb; font-size: 14.5px; margin: 10px 0 18px; max-width: 520px; }
+.koszyk-bw-body .field { max-width: 360px; }
+.koszyk-bw-body .field label { color: #c3c3cb; }
+.koszyk-bw-body .field input { background: #0b0b0d; border-color: rgba(255, 255, 255, .22); color: #fff; }
+.koszyk-bw-body .field input:focus { border-color: var(--red); }
+.koszyk-bw-body > p.koszyk-bw-note { font-size: 13px; color: #8f8f99; margin: 10px 0 0; }
+@media (max-width: 760px) {
+  .koszyk-bw { grid-template-columns: 1fr; gap: 18px; padding: 24px 20px; }
+  .koszyk-bw-cards { width: 132px; margin: 36px 0 4px 4px; }
+  .koszyk-bw-body .field { max-width: none; }
+}

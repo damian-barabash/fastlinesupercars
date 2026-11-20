@@ -58,6 +58,14 @@ export default function Dziekujemy() {
     return () => { stop = true }
   }, [orderId, isTest, isError])
 
+  // Black Week (kod BLACK, 1+1): strona podziękowania zostaje w ciemnym motywie koszyka
+  const bonus = order?.bonus || null
+  useEffect(() => {
+    if (!bonus) return
+    document.documentElement.classList.add('bw')
+    return () => document.documentElement.classList.remove('bw')
+  }, [!!bonus])
+
   if (phase === 'empty') {
     return (
       <main className="section wrap tac dz">
@@ -97,27 +105,45 @@ export default function Dziekujemy() {
         {order?.number && <div className="dz-order-no">Zamówienie <b>#{order.number}</b></div>}
         <p className="dz-lead muted">
           {phase === 'paid'
-            ? <>Płatność potwierdzona. Voucher PDF wysłaliśmy na <b style={{ color: 'var(--ink)' }}>{order?.customer_email}</b>.</>
+            ? <>Płatność potwierdzona. {bonus ? 'Dwa vouchery PDF wysłaliśmy' : 'Voucher PDF wysłaliśmy'} na <b style={{ color: 'var(--ink)' }}>{order?.customer_email}</b>.</>
             : phase === 'slow'
-              ? <>Płatność jest jeszcze przetwarzana przez bank. Voucher PDF wyślemy na <b style={{ color: 'var(--ink)' }}>{order?.customer_email}</b> automatycznie, gdy tylko wpłata zostanie zaksięgowana — nie musisz nic robić.</>
-              : 'Potwierdzamy płatność i generujemy Twój voucher — to potrwa kilka sekund…'}
+              ? <>Płatność jest jeszcze przetwarzana przez bank. {bonus ? 'Oba vouchery' : 'Voucher'} PDF wyślemy na <b style={{ color: 'var(--ink)' }}>{order?.customer_email}</b> automatycznie, gdy tylko wpłata zostanie zaksięgowana — nie musisz nic robić.</>
+              : `Potwierdzamy płatność i generujemy ${bonus ? 'Twoje vouchery' : 'Twój voucher'} — to potrwa kilka sekund…`}
         </p>
 
         {phase !== 'slow' && (
-          <div className={`dz-voucher carbon ${phase === 'paid' ? 'is-ready' : ''}`}>
-            <div className="dz-voucher-label">Kod vouchera</div>
-            <div className="dz-voucher-code">
-              {voucher?.code || <span className="dz-code-skeleton">FS-····-····</span>}
+          <div className={bonus ? 'dz-vouchers' : undefined}>
+            <div className={`dz-voucher carbon ${phase === 'paid' ? 'is-ready' : ''}`}>
+              <div className="dz-voucher-label">{bonus ? `Voucher dla: ${voucher?.recipient || order.customer_name}` : 'Kod vouchera'}</div>
+              <div className="dz-voucher-code">
+                {voucher?.code || <span className="dz-code-skeleton">FS-····-····</span>}
+              </div>
+              <div className="dz-voucher-valid">
+                {valid ? <>Ważny do: <b>{valid}</b></> : 'Ważny 1 rok od zakupu'}
+              </div>
             </div>
-            <div className="dz-voucher-valid">
-              {valid ? <>Ważny do: <b>{valid}</b></> : 'Ważny 1 rok od zakupu'}
-            </div>
+            {bonus && (
+              <motion.div
+                className={`dz-voucher dz-voucher-free carbon ${phase === 'paid' ? 'is-ready' : ''}`}
+                initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.5 }}
+              >
+                <div className="dz-voucher-label"><i>Gratis</i> Voucher dla: {bonus.for}</div>
+                <div className="dz-voucher-code">
+                  {bonus.voucher?.code || <span className="dz-code-skeleton">FS-····-····</span>}
+                </div>
+                <div className="dz-voucher-valid">
+                  {valid ? <>Ważny do: <b>{valid}</b></> : 'Ważny 1 rok od zakupu'}
+                </div>
+              </motion.div>
+            )}
           </div>
         )}
 
         <div className="dz-next">
           <h2 className="h-md">Następny krok?</h2>
-          <p className="muted">Zarezerwuj termin przejazdu na wybranym torze — podasz swój kod vouchera.</p>
+          <p className="muted">{bonus
+            ? 'Zarezerwuj terminy przejazdów na wybranym torze — każdy voucher ma własny kod i rezerwuje się osobno.'
+            : 'Zarezerwuj termin przejazdu na wybranym torze — podasz swój kod vouchera.'}</p>
           <div className="dz-ctas">
             {phase === 'slow' && order?.payment_url
               ? <a className="btn btn-red" href={order.payment_url}>Dokończ płatność</a>

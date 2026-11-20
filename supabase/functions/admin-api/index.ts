@@ -75,6 +75,22 @@ async function existingCodes(codes: string[]): Promise<Set<string>> {
   return out
 }
 
+// Black Week: kod „1+1" (ta sama stała co w `_shared/core.ts`)
+const BLACK_CODE = 'BLACK'
+
+/** Dokleja do zamówień ich vouchery: zwykły (`voucher`) i gratisowy z Black Week (`bonus_voucher`). */
+async function attachVouchers(orders: Record<string, any>[]) {
+  const ids = [...new Set(orders.flatMap((o) => [o.voucher_id, o.bonus_voucher_id]).filter(Boolean))]
+  if (!ids.length) return
+  const vs = await db(`vouchers?id=in.(${ids.join(',')})&select=id,code,pdf_path,status,valid_until,recipient`)
+  const byId: Record<string, unknown> = {}
+  for (const v of vs) byId[v.id] = v
+  for (const o of orders) {
+    if (o.voucher_id) o.voucher = byId[o.voucher_id] || null
+    if (o.bonus_voucher_id) o.bonus_voucher = byId[o.bonus_voucher_id] || null
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
@@ -133,14 +149,7 @@ Deno.serve(async (req) => {
         if (body.status) q += `&status=eq.${encodeURIComponent(body.status)}`
         if (body.search) q += `&or=(customer_name.ilike.*${encodeURIComponent(body.search)}*,customer_email.ilike.*${encodeURIComponent(body.search)}*)`
         const orders = await db(q)
-        // attach voucher (code, pdf, status) to each paid order
-        const ids = orders.filter((o: { voucher_id?: string }) => o.voucher_id).map((o: { voucher_id: string }) => o.voucher_id)
-        if (ids.length) {
-          const vs = await db(`vouchers?id=in.(${ids.join(',')})&select=id,code,pdf_path,status,valid_until`)
-          const byId: Record<string, unknown> = {}
-          for (const v of vs) byId[v.id] = v
-          for (const o of orders) if (o.voucher_id) o.voucher = byId[o.voucher_id] || null
-        }
+        await attachVouchers(orders)   // voucher + (Black Week) bonus_voucher
         return J(orders)
       }
 
@@ -519,6 +528,25 @@ Deno.serve(async (req) => {
               ? o.discounts.filter((d) => d.kind === 'voucher').reduce((s3, d) => s3 + (+d.discount || 0), 0)
               : o.discount_kind === 'voucher' ? (+o.discount_grosze || 0) : 0), 0),
         })
+      }
+
+      // ---------- Black Week: kod BLACK (1+1) ----------
+      case 'black.get': {
+        const [orders, st] = await Promise.all([
+          db(`orders?bonus_code=not.is.null&select=*&order=created_at.desc&limit=500`),
+          db(`settings?key=eq.black_active&select=value`),
+        ])
+        await attachVouchers(orders)
+        return J({ code: BLACK_CODE, active: st?.[0]?.value === '1', orders })
+      }
+
+      case 'black.set': {
+        await db('settings', {
+          method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' },
+          body: JSON.stringify([{ key: 'black_active', value: body.active ? '1' : '0' }]),
+        })
+        console.log(`black.set: ${body.active ? 'włączony' : 'wyłączony'} (${session.username})`)
+        return J({ ok: true, active: !!body.active })
       }
 
       case 'gifts.list': {

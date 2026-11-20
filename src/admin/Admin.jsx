@@ -6,6 +6,7 @@ import Templates from './Templates.jsx'
 import Vouchers from './Vouchers.jsx'
 import Spam from './Spam.jsx'
 import Gifts from './Gifts.jsx'
+import BlackWeek from './BlackWeek.jsx'
 import './admin.css'
 
 const TABS = [
@@ -14,6 +15,7 @@ const TABS = [
   ['products', 'Produkty'],
   ['orders', 'Zamówienia'],
   ['gifts', 'Święta'],
+  ['black', 'Black Week'],
   ['vouchers', 'Vouchery'],
   ['templates', 'Szablony'],
   ['spam', 'Spam'],
@@ -57,6 +59,7 @@ export default function Admin() {
         {tab === 'products' && <Products />}
         {tab === 'orders' && <Orders />}
         {tab === 'gifts' && <Gifts />}
+        {tab === 'black' && <BlackWeek />}
         {tab === 'vouchers' && <Vouchers />}
         {tab === 'templates' && <Templates />}
         {tab === 'spam' && <Spam />}
@@ -519,11 +522,12 @@ function Orders() {
               {rows.map((o) => (
                 <tr key={o.id} onClick={() => setOpen(open === o.id ? null : o.id)} className="adm-row-click">
                   <td>#{o.number}</td>
-                  <td><b>{o.customer_name}</b>{o.invoice && <span className="adm-pill adm-pill-fv" title={`Faktura: ${o.invoice.company}`}>FV</span>}{o.campaign && <span className="adm-pill adm-gift-pill" title="Voucher świąteczny">ŚWIĘTA</span>}{o.is_test && <span className="adm-pill adm-gift-test">TEST</span>}<div className="adm-muted">{o.customer_email}</div>
+                  <td><b>{o.customer_name}</b>{o.invoice && <span className="adm-pill adm-pill-fv" title={`Faktura: ${o.invoice.company}`}>FV</span>}{o.campaign && <span className="adm-pill adm-gift-pill" title="Voucher świąteczny">ŚWIĘTA</span>}{o.is_test && <span className="adm-pill adm-gift-test">TEST</span>}{o.bonus_code && <span className="adm-pill adm-bw-pill" title="Kod BLACK — drugi voucher gratis">BLACK</span>}<div className="adm-muted">{o.customer_email}</div>
                     {open === o.id && (
                       <div className="adm-order-detail">
                         {o.customer_phone && <div>Tel: {o.customer_phone}</div>}
                         {o.gift_for && <div>Prezent dla: <b>{o.gift_for}</b></div>}
+                        {o.bonus_code && <div>Drugi voucher (gratis, kod {o.bonus_code}) dla: <b>{o.bonus_for || o.gift_for || o.customer_name}</b></div>}
                         {o.invoice && (
                           <div className="adm-order-invoice">
                             <b>Faktura VAT:</b> {o.invoice.company}<br />
@@ -548,6 +552,16 @@ function Orders() {
                           <span className={`adm-badge is-${o.voucher.status}`}>{o.voucher.status}</span>
                           {o.voucher.pdf_path && <button className="adm-link" onClick={(e) => openPdf(e, o.voucher)}>PDF</button>}
                         </div>
+                        {o.bonus_voucher && (
+                          <>
+                            <b className="adm-code" style={{ fontSize: 13, display: 'block', marginTop: 8 }}>{o.bonus_voucher.code}</b>
+                            <div className="adm-order-vactions">
+                              <span className="adm-badge adm-bw-free">gratis</span>
+                              <span className={`adm-badge is-${o.bonus_voucher.status}`}>{o.bonus_voucher.status}</span>
+                              {o.bonus_voucher.pdf_path && <button className="adm-link" onClick={(e) => openPdf(e, o.bonus_voucher)}>PDF</button>}
+                            </div>
+                          </>
+                        )}
                       </>
                     ) : <span className="adm-muted">—</span>}
                   </td>
