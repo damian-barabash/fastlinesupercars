@@ -5,6 +5,7 @@ import { useProducts, isOpenAmount } from '../../lib/products.js'
 import { shop, zl } from '../../lib/api.js'
 import { scrollToEl, lockScroll } from '../../lib/smooth.js'
 import { gtmAddToCart, gtmBeginCheckout, gtmPurchase } from '../../lib/gtm.js'
+import { pxAddToCart, pxInitiateCheckout, pxPurchase, pxViewContent } from '../../lib/pixel.js'
 import GiftVoucher, { TEMPLATE_IDS } from './GiftVoucher.jsx'
 import LockerPicker from './LockerPicker.jsx'
 import { addressOf } from './inpost.js'
@@ -80,6 +81,7 @@ export default function SwietaVoucher() {
 
   const pick = (x) => {
     setPid(x.id); setErr(''); setCodes([]); setCodeErr('')
+    pxViewContent({ product_id: x.id, name: x.name, price: x.price_from || x.variants?.[0]?.price || 0 })
     if (isOpenAmount(x)) { setVariant(''); setAmountTxt(String((x.price_from || 89900) / 100)) }
     else setVariant(x.variants?.[0]?.laps && x.variants.length === 1 ? x.variants[0].laps : '')
   }
@@ -173,7 +175,10 @@ export default function SwietaVoucher() {
       for (let i = step; i < n; i++) { const pr = problem(STEPS[i][0]); if (pr) { setErr(pr); return } }
     }
     setErr(''); setStep(n); toBody()
-    if (STEPS[n][0] === 'gotowe' && p) gtmAddToCart({ product_id: p.id, name: p.name, variant: open ? amountLabel(amount) : variant, price, qty: 1 })
+    if (STEPS[n][0] === 'gotowe' && p) {
+      const row = { product_id: p.id, name: p.name, variant: open ? amountLabel(amount) : variant, price, qty: 1 }
+      gtmAddToCart(row); pxAddToCart(row)
+    }
   }
   const next = () => go(Math.min(step + 1, STEPS.length - 1))
 
@@ -181,7 +186,8 @@ export default function SwietaVoucher() {
     const pr = problem('gotowe')
     if (pr) { setErr(pr); return }
     setErr('')
-    gtmBeginCheckout([{ product_id: p.id, name: p.name, variant: open ? amountLabel(amount) : variant, price, qty: 1 }], toPay)
+    const row = { product_id: p.id, name: p.name, variant: open ? amountLabel(amount) : variant, price, qty: 1 }
+    gtmBeginCheckout([row], toPay); pxInitiateCheckout([row], toPay)
     setPack(true)
   }
   const createOrder = () => shop('checkout', {
@@ -390,7 +396,12 @@ export default function SwietaVoucher() {
         <PackShow productId={p.id} forName={forName} line={line} email={form.email} delivery={delivery} locker={inpost.point?.code}
           create={createOrder} onClose={() => setPack(false)}
           onAgain={() => { setPack(false); setStep(0); setPid(null); setForName(''); setCodes([]); setTerms(false) }}
-          onPaid={(r) => { if (!r.test) gtmPurchase({ number: r.number, total: r.total, items: [{ product_id: p.id, name: p.name, variant, price, qty: 1 }] }) }} />
+          onPaid={(r) => {
+            if (r.test) return
+            const items = [{ product_id: p.id, name: p.name, variant, price, qty: 1 }]
+            gtmPurchase({ number: r.number, total: r.total, items })
+            pxPurchase({ id: r.order_id, number: r.number, total: r.total, items })
+          }} />
       )}
     </div>
   )

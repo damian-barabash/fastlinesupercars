@@ -7,6 +7,7 @@ import Nav from './components/Nav.jsx'
 import Footer from './components/Footer.jsx'
 import SpeedFx from './components/SpeedFx.jsx'
 import SeoSync from './components/SeoSync.jsx'
+import CookieBar from './components/CookieBar.jsx'
 import Home from './pages/Home.jsx'
 import Oferta from './pages/Oferta.jsx'
 import Produkt from './pages/Produkt.jsx'
@@ -91,6 +92,7 @@ export default function App() {
       </Routes>
       </motion.div>
       <Footer />
+      <CookieBar />
     </ContentProvider>
   )
 }

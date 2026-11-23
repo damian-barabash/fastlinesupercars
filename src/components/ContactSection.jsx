@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { T } from '../lib/content.jsx'
 import { shop } from '../lib/api.js'
+import { pxLead } from '../lib/pixel.js'
 import { Reveal } from './Reveal.jsx'
 import './contact.css'
 
@@ -15,6 +16,7 @@ export default function ContactSection() {
     try {
       await shop('contact', form)
       setState('done')
+      pxLead('Kontakt')   // dopiero gdy serwer przyjął wiadomość
     } catch {
       setState('error')
     }

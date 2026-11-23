@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useProducts, productPrice, isOpenAmount, AMOUNT_MAX_DEFAULT } from '../lib/products.js'
 import { addToCart } from '../lib/cart.js'
 import { gtmAddToCart } from '../lib/gtm.js'
+import { pxAddToCart, pxViewContent } from '../lib/pixel.js'
 import { zl } from '../lib/api.js'
 import { Reveal } from '../components/Reveal.jsx'
 import CarCard from '../components/CarCard.jsx'
@@ -35,6 +36,11 @@ export default function Produkt() {
   const presets = open ? [300, 500, p.price_from / 100, 1500].filter((v, i, a) => v >= minZl && v <= maxZl && a.indexOf(v) === i).sort((a, b) => a - b) : []
   const others = useMemo(() => products.filter((x) => x.id !== id && x.id !== 'voucher').slice(0, 3), [products, id])
 
+  // odsłona karty produktu — raz na produkt, z ceną domyślnego wariantu
+  useEffect(() => {
+    if (p) pxViewContent({ product_id: p.id, name: p.name, price: productPrice(p, p.variants?.[0]?.laps || '') })
+  }, [p?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!p) {
     return (
       <main className="section wrap tac">
@@ -49,6 +55,7 @@ export default function Produkt() {
     const line = { product_id: p.id, variant: !open && p.variants?.length ? chosen : '', name: p.name, ...(open ? { amount } : {}) }
     addToCart(line)
     gtmAddToCart({ ...line, price, qty: 1 })
+    pxAddToCart({ ...line, price, qty: 1 })
     setAdded(true)
     setTimeout(() => setAdded(false), 1800)
     if (goCheckout) nav('/koszyk')

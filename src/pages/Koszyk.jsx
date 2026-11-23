@@ -7,6 +7,7 @@ import { useProducts, productPrice, isOpenAmount, amountLabel } from '../lib/pro
 import { shop, zl } from '../lib/api.js'
 import { Reveal } from '../components/Reveal.jsx'
 import { gtmBeginCheckout } from '../lib/gtm.js'
+import { pxInitiateCheckout } from '../lib/pixel.js'
 import './koszyk.css'
 
 const STEPS = ['Koszyk', 'Dane', 'Podsumowanie', 'Płatność']
@@ -248,6 +249,7 @@ export default function Koszyk() {
     setErr('')
     setPayBusy(true)
     gtmBeginCheckout(rows.map((r) => ({ ...r, name: r.p?.name })), grandTotal)
+    pxInitiateCheckout(rows.map((r) => ({ ...r, name: r.p?.name })), grandTotal)
     try {
       const d = await shop('checkout', {
         customer: { name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim() },

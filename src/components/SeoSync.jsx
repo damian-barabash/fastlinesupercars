@@ -4,6 +4,7 @@ import { useProducts } from '../lib/products.js'
 import { TORY } from '../data/tory.js'
 import { seoFor, SITE, DEFAULT_IMAGE } from '../data/seo.js'
 import { gtmPageView } from '../lib/gtm.js'
+import { pxPageView } from '../lib/pixel.js'
 
 // Statyczne pliki z `scripts/prerender.mjs` mają poprawne meta już przy wejściu,
 // ale przy nawigacji wewnątrz aplikacji tytuł i canonical trzeba podmienić ręcznie —
@@ -51,6 +52,7 @@ export default function SeoSync() {
     if (!path.startsWith('/admin') && sentFor.current !== path) {
       sentFor.current = path
       gtmPageView(path, seo.title)
+      pxPageView()
     }
   }, [pathname, products])
 

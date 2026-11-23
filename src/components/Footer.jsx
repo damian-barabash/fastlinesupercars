@@ -31,6 +31,7 @@ export default function Footer() {
           <h4 className="footer-h">Informacje</h4>
           <Link to="/regulamin-platnosci">Regulamin płatności</Link>
           <Link to="/polityka-prywatnosci">Polityka prywatności</Link>
+          <a href="#cookies" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new Event('fs-cookies-open')) }}>Ustawienia cookies</a>
           <Link to="/koszyk">Koszyk</Link>
         </div>
       </div>

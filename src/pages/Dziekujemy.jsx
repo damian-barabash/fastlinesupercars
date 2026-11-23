@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { shop } from '../lib/api.js'
 import { gtmPurchase } from '../lib/gtm.js'
+import { pxPurchase } from '../lib/pixel.js'
 import './dziekujemy.css'
 
 // Powrót z bramki Tpay. Statusu płatności NIE ustala przeglądarka — pytamy serwer
@@ -40,6 +41,7 @@ export default function Dziekujemy() {
             // jeden `purchase` na zamówienie, nawet po odświeżeniu strony
             const key = `fs_gtm_purchase_${d.id}`
             if (!sessionStorage.getItem(key)) { sessionStorage.setItem(key, '1'); gtmPurchase(d) }
+            if (!isTest) pxPurchase(d)   // Meta: tylko prawdziwe zamówienia, raz na zamówienie
             return
           }
           if (d.status === 'chargeback') { setPhase('failed'); return }
